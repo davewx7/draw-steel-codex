@@ -356,7 +356,15 @@ local ShowPDFViewerDialogInternal = function(doc, starting_page)
     local m_npage = tonumber(m_settings.page) or 0
 
     if starting_page ~= nil then
-        m_npage = starting_page
+        if type(starting_page) == "string" then
+            starting_page = trim(string.lower(starting_page))
+        end
+        for i,label in ipairs(document.summary.pageLabels) do
+            if starting_page == string.lower(label) then
+                m_npage = i-1
+                break
+            end
+        end
     end
 
     local m_zoom = tonumber(m_settings.zoom) or 1
@@ -1293,7 +1301,8 @@ local ShowPDFViewerDialogInternal = function(doc, starting_page)
                                     floating = true,
                                     y = 12,
                                     npage = function(element, npage)
-                                        element.text = string.format("%d", npage + 1)
+                                        local text = document.summary.pageLabels[npage+1] or string.format("%d", npage + 1)
+                                        element.text = text
                                     end,
                                 },
                             }
@@ -1958,7 +1967,20 @@ local ShowPDFViewerDialogInternal = function(doc, starting_page)
         end,
 
         gotopage = function(element, npage)
-            m_npage = npage
+            if type(npage) == "string" then
+                npage = trim(string.lower(npage))
+            end
+
+            m_npage = nil
+            for i,label in ipairs(document.summary.pageLabels) do
+                if npage == string.lower(label) then
+                    m_npage = i-1
+                    break
+                end
+            end
+
+            m_npage = m_npage or tonumber(npage) or 1
+
             m_searchResults = nil
             m_searchText = nil
             RefreshPage()
@@ -2161,9 +2183,19 @@ local ShowPDFViewerDialogInternal = function(doc, starting_page)
                     height = 20,
                     textAlignment = "right",
                     page = function(element)
-                        element.text = string.format("%d", m_npage + 1)
+                        element.text = document.summary.pageLabels[m_npage+1] or string.format("%d", m_npage + 1)
                     end,
                     change = function(element)
+                        local text = trim(string.lower(element.text))
+                        for i,label in ipairs(document.summary.pageLabels) do
+                            if text == string.lower(label) then
+                                m_npage = i - 1
+                                m_searchResults = nil
+                                RefreshPage()
+                                return
+                            end
+                        end
+
                         m_npage = round((tonumber(element.text) or 1) - 1)
                         m_searchResults = nil
                         RefreshPage()
@@ -2173,7 +2205,7 @@ local ShowPDFViewerDialogInternal = function(doc, starting_page)
                     fontSize = 14,
                     width = "auto",
                     height = "auto",
-                    text = string.format("/%d", document.summary.npages),
+                    text = "/" .. (document.summary.pageLabels[#document.summary.pageLabels] or string.format("%d", document.summary.npages)),
                 },
                 gui.PagingArrow {
                     hmargin = 4,
@@ -2584,7 +2616,7 @@ dmhub.OpenDocument = function(url)
         local docs = assets.pdfDocumentsTable
         local doc = docs[info.id]
         if doc ~= nil then
-            mod.shared.ShowPDFViewerDialog(doc, tonumber(info.args.page))
+            mod.shared.ShowPDFViewerDialog(doc, info.args.page)
         end
     end
 end

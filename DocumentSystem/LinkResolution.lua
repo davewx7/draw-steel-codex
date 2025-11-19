@@ -23,13 +23,23 @@ end
 
 RegisterGameType("PDFDeepLink", "CustomDocument")
 PDFDeepLink.docid = ""
-PDFDeepLink.page = 1
+PDFDeepLink.page = "C"
 
 function PDFDeepLink:ShowDocument()
     local docs = assets.pdfDocumentsTable
     local doc = docs[self.docid]
     if doc ~= nil then
         OpenPDFDocument(doc, self.page)
+    end
+end
+
+function PDFDeepLink:PreviewDescription()
+    local docs = assets.pdfDocumentsTable
+    local doc = docs[self.docid]
+    if doc ~= nil then
+        return doc.description
+    else
+        return "Cannot get document information"
     end
 end
 
@@ -244,17 +254,27 @@ function CustomDocument.ResolveLink(link)
     end
 
     if string.starts_with(link, "pdf:") then
-        local match = regex.MatchGroups(link, "^pdf:(?<docid>[^:]+?)(?<page>:[0-9]+)?$")
+        local match = regex.MatchGroups(link, "^pdf:(?<docid>[^:]+?)(?<page>:[0-9a-zA-Z]+)?$")
         if match ~= nil then
             local docid = match.docid
             local docs = assets.pdfDocumentsTable
             local fragments = dmhub.GetTable(PDFFragment.tableName) or {}
             if match.page ~= nil and docs[docid] ~= nil then
-                local pageNum = tonumber(string.sub(match.page, 2))
                 return PDFDeepLink.new{
                     docid = docid,
-                    page = pageNum or 1,
+                    page = string.sub(match.page, 2),
                 }
+            elseif match.page ~= nil then
+                local docidLower = string.lower(docid)
+                for k,doc in pairs(docs) do
+                    if string.lower(doc.description) == docidLower then
+                        local pageNum = string.sub(match.page, 2)
+                        return PDFDeepLink.new{
+                            docid = k,
+                            page = pageNum,
+                        }
+                    end 
+                end
             end
             local doc = docs[docid] or fragments[docid]
             print("LINK:: RESOLVE TO", docid, doc)
