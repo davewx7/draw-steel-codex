@@ -1367,6 +1367,11 @@ function CreateTokenHud(token)
 
 						fadein = function(element)
 							element:SetClass("fadein", false)
+                            if EquipmentCategory.IsTreasure(itemInfo) then
+                                audio.FireSoundEvent("UI.Inv_Item_Pickup_Special")
+                            else
+                                audio.FireSoundEvent("UI.Inv_Item_Pickup_Gnrc")
+                            end
 						end,
 						disappear = function(element)
 							element:SetClass("disappear", true)

@@ -97,7 +97,7 @@ local DockablePanelTheme = {
 
 	{
 		selectors = {"dockFrame", "parent:empty"},
-		opacity = 0,
+        collapsed = 1,
 	},
 
 

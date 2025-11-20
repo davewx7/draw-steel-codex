@@ -802,6 +802,17 @@ function equipment:RenderToMarkdown(options)
         tokens[#tokens+1] = self.description
     end
 
+    if not options.noninteractive then
+        tokens[#tokens+1] = "\n\n:<>"
+        for _,token in ipairs(dmhub.GetTokens{playerControlled = true}) do
+            if token.name ~= "" then
+                tokens[#tokens+1] = string.format("[[/giveitem \"%s\" %s 1|Give to %s]]", token.name, self.id, token.name)
+            end
+        end
+
+        tokens[#tokens+1] = "\n"
+    end
+
 
     return MarkdownDocument.new{
         id = dmhub.GenerateGuid(),
