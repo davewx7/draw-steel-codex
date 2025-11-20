@@ -8308,18 +8308,16 @@ function creature:DispatchAvailableTrigger(triggerInfo)
 	local availableTriggers = self:get_or_add("availableTriggers", {})
 	local deletes = {}
 	for key,value in pairs(availableTriggers) do
-		if triggerInfo == nil or key ~= triggerInfo.id then
-			local age = TimestampAgeInSeconds(value.timestamp)
-			if age > 60 then
-				deletes[#deletes+1] = key
-            elseif triggerInfo ~= nil then
-                --check if this is a duplicate trigger.
-                if (not value.dismissed) and (not value.triggered) and (value.text == triggerInfo.text) and (value.rules == triggerInfo.rules) and dmhub.DeepEqual(value.modes, triggerInfo.modes) and dmhub.DeepEqual(value.targets, triggerInfo.targets) then
-                    --just refresh this trigger instead of creating a new one.
-                    value.timestamp = ServerTimestamp()
-                    triggerInfo = nil
-                end
-            end
+		local age = TimestampAgeInSeconds(value.timestamp)
+		if age > 60 then
+			deletes[#deletes+1] = key
+		elseif triggerInfo ~= nil and key == triggerInfo.id then
+			--check if this is a duplicate trigger (same ID, just refreshing).
+			if (not value.dismissed) and (not value.triggered) and (value.text == triggerInfo.text) and (value.rules == triggerInfo.rules) and dmhub.DeepEqual(value.modes, triggerInfo.modes) and dmhub.DeepEqual(value.targets, triggerInfo.targets) then
+				--just refresh this trigger instead of creating a new one.
+				value.timestamp = ServerTimestamp()
+				triggerInfo = nil
+			end
 		end
 	end
 
