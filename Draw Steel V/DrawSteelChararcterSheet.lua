@@ -1227,6 +1227,7 @@ function CharSheet.CharacterSheetAndAvatarPanel()
                     { id = "elite",   text = "Elite" },
                     { id = "leader",  text = "Leader" },
                     { id = "solo",    text = "Solo" },
+                    { id = "retainer", text = "Retainer"},
                 },
                 refreshToken = function(element, info)
                     if not info.token.properties:IsMonster() then
@@ -1236,6 +1237,8 @@ function CharSheet.CharacterSheetAndAvatarPanel()
                     if c.minion then
                         element.idChosen = "minion"
                         return
+                    elseif c:try_get("retainer") then
+                        element.idChosen = "retainer"
                     end
 
                     element.idChosen = c:Organization() or "none"
@@ -1247,6 +1250,7 @@ function CharSheet.CharacterSheetAndAvatarPanel()
                         c.minionSquad = nil
                     end
                     c.minion = (element.idChosen == "minion")
+                    c.retainer = (element.idChosen == "retainer")
 
                     local org = c:Organization()
                     if org ~= nil then
