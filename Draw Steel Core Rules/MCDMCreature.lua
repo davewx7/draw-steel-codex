@@ -300,6 +300,21 @@ function creature:RefreshToken(token)
         self._tmp_retainer = token.playerControlled
     end
 
+    -- Set up initiative grouping for retainers with their mentor
+    -- Should this be moved to RefreshInitiativeGrouping?
+    if (not mod.unloaded) and self:IsRetainer() then
+        local mentor = self:GetMentor()
+        if mentor then
+            local mentorToken = dmhub.LookupToken(mentor)
+            if mentorToken then
+                local mentorInitiativeId = InitiativeQueue.GetInitiativeId(mentorToken)
+                if self.initiativeGrouping ~= mentorInitiativeId then
+                    self.initiativeGrouping = mentorInitiativeId
+                end
+            end
+        end
+    end
+
     g_baseRefreshToken(self, token)
 
     if self:IsHero() then
