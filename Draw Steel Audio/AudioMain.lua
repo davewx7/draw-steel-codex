@@ -703,6 +703,17 @@ audio.SoundEvent{
 
 
 
+audio.SoundEvent{
+    name = "Obj.Trap_Trigger_Sycthe",
+    mixgroup = "gameplay",
+    sounds = {"obj/OBJ_Trap_Trigger_Scythe_01.wav"},
+    volume = 0.4,
+    ignoreDuplicates = 1,
+}
+
+
+
+
 --Doors
 
 audio.SoundEvent{
