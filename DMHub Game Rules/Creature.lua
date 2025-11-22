@@ -1543,9 +1543,10 @@ function creature.SetTemporaryHitpoints(self, amount, note, options)
 	if self:TemporaryHitpoints() <= 0 then
 		--clear out any ongoing effect tied to these hitpoints if we didn't start out with temporary hitpoints.
 		self.temporary_hitpoints_effect = nil
+		self.tempHitpointsEndEffect = nil
 	end
 
-	if amount <= 0 and self:has_key("temporary_hitpoints_effect") then
+	if amount <= 0 and self:has_key("temporary_hitpoints_effect") and self:try_get("tempHitpointsEndEffect", true) then
 		self:RemoveOngoingEffect(self.temporary_hitpoints_effect)
 		options.temporary_hitpoints_effect = nil
 	end
@@ -1564,6 +1565,11 @@ function creature.SetTemporaryHitpoints(self, amount, note, options)
 	--mark which effect is tied to these hitpoints.
 	if amount > 0 and options.ongoingeffectid then
 		self.temporary_hitpoints_effect = options.ongoingeffectid
+		if options.tempHitpointsEndEffect ~= nil then
+			self.tempHitpointsEndEffect = options.tempHitpointsEndEffect
+		else
+			self.tempHitpointsEndEffect = true
+		end
 	end
 
 	self:GetStatHistory("temporary_stamina"):Append{
@@ -1580,7 +1586,10 @@ function creature:RemoveTemporaryHitpoints(amount, note)
 	end
 
 	temporary_hitpoints = temporary_hitpoints - amount
-	self:SetTemporaryHitpoints(temporary_hitpoints, note, { temporary_hitpoints_effect = self:try_get("temporary_hitpoints_effect") })
+	self:SetTemporaryHitpoints(temporary_hitpoints, note, { 
+		temporary_hitpoints_effect = self:try_get("temporary_hitpoints_effect"),
+		tempHitpointsEndEffect = self:try_get("tempHitpointsEndEffect", true)
+	})
 	if temporary_hitpoints < 0 then
 		return -temporary_hitpoints
 	else
@@ -5977,6 +5986,7 @@ function creature:ApplyOngoingEffect(ongoingEffectid, duration, casterInfo, opti
 		--any previous temporary stamina grant.
 		self:SetTemporaryHitpoints(options.temporary_hitpoints, string.format("Applied %s", ongoingEffect.name), {
 			ongoingeffectid = ongoingEffectid,
+			tempHitpointsEndEffect = options.tempHitpointsEndEffect,
 		})
 
 		self:DispatchEvent("gaintempstamina", {})
