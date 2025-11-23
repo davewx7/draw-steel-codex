@@ -303,8 +303,10 @@ local function CreateCharSheetImport()
     return m_resultPanel
 end
 
+--[[
 CharSheet.RegisterTab{
     id = "Import",
     text = "Import",
     panel = CreateCharSheetImport,
 }
+]]
