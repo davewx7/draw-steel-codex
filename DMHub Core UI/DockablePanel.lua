@@ -70,13 +70,13 @@ local DockablePanelTheme = {
 
 	{
 		selectors = {"dock", "offscreen", "left"},
-		x = -380,
+		x = -DockablePanel.DockWidth,
 		transitionTime = 0.2,
 	},
 
 	{
 		selectors = {"dock", "offscreen", "right"},
-		x = 380,
+		x = DockablePanel.DockWidth,
 		transitionTime = 0.2,
 	},
 
@@ -185,68 +185,54 @@ local DockablePanelTheme = {
 	},
 
     {
-		selectors = {"dockHandle"},
-		width = 32,
-		height = 64,
+        selectors = {"dockHandleImage"},
+        width = 32,
+        height = 64,
 		bgimage = "panels/dock-handle.png",
 		bgcolor = "white",
-		valign = "bottom",
-		halign = "right",
 		saturation = 0,
 		brightness = 2,
         opacity = 0.5,
+        x = 8,
+    },
+
+    {
+		selectors = {"dockHandle"},
+		width = 32,
+		height = 64,
+        bgimage = "panels/square.png",
+		bgcolor = "clear",
+		valign = "bottom",
+		halign = "right",
 	},
 
 	{
 		selectors = {"dockHandle", "left"},
 		scale = {x = -1},
-		x = 16,
+		x = 32,
 		y = 8,
-	},
-
-	{
-		selectors = {"dockHandle", "left", "hover", "~parent:offscreen"},
-		x = 16,
-		transitionTime = 0.1,
-	},
-
-	{
-		selectors = {"dockHandle", "left", "parent:offscreen"},
-		x = 16,
-		transitionTime = 0.1,
 	},
 
 	{
 		selectors = {"dockHandle", "right"},
 		halign = "left",
-		x = -16,
+		x = -32,
 		y = 8,
 	},
-
-	{
-		selectors = {"dockHandle", "right", "hover", "~parent:offscreen"},
-		x = -16,
-		transitionTime = 0.1,
-	},
-
-	{
-		selectors = {"dockHandle", "right", "parent:offscreen"},
-		x = -16,
-		transitionTime = 0.1,
-	},
-
-	{
-		selectors = {"dockHandle", "hover"},
-		brightness = 2,
-	},
-
-	
 
 	{
 		selectors = {"dockHandle", "parent:empty"},
 		collapsed = 1,
 	},
 
+
+
+	{
+		selectors = {"dockHandleImage", "hover"},
+		x = -8,
+		transitionTime = 0.1,
+		brightness = 2,
+	},
 
     {
         selectors = {"tab"},
@@ -312,23 +298,28 @@ function GameHud:CreateSingleDock(params)
             idprefix = "dockHandle",
             classes = {"dockHandle", params.halign},
             floating = true,
+            interactable = false,
+            vscroll = true,
 
-            monitor = offscreenSetting,
+            gui.Panel{
+                classes = {"dockHandleImage"},
+                monitor = offscreenSetting,
 
-            events = {
-                press = function(element)
-                    dmhub.SetSettingValue(offscreenSetting, not dmhub.GetSettingValue(offscreenSetting))
-                end,
+                events = {
+                    press = function(element)
+                        dmhub.SetSettingValue(offscreenSetting, not dmhub.GetSettingValue(offscreenSetting))
+                    end,
 
-                monitor = function(element)
-                    resultPanel:SetClass("offscreen", dmhub.GetSettingValue(offscreenSetting))
-                    dmhub.UpdateScreenHudArea(cond(resultPanel:HasClass("offscreen"), 0, 1))
-                end,
+                    monitor = function(element)
+                        resultPanel:SetClass("offscreen", dmhub.GetSettingValue(offscreenSetting))
+                        dmhub.UpdateScreenHudArea(cond(resultPanel:HasClass("offscreen"), 0, 1))
+                    end,
 
-                create = function(element)
-                    element:FireEvent("monitor")
-                end,
-            }
+                    create = function(element)
+                        element:FireEvent("monitor")
+                    end,
+                }
+            },
         }
     end
 
