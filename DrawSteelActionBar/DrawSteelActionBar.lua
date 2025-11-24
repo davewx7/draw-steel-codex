@@ -4066,7 +4066,7 @@ CalculateSpellTargeting = function(forceCast, initialSetup)
         g_skipButton:SetClass("collapsed", not g_currentAbility:try_get("skippable", false))
 
         -- Don't auto-cast on initial setup unless requested
-        if ((not g_currentAbility:CanSelectMoreTargets(g_token, targets, g_currentSymbols)) or forceCast) and not initialSetup then
+        if ((not g_currentAbility:CanSelectMoreTargets(g_token, targets, g_currentSymbols)) or forceCast) then --temporarily disabled -David -- and not initialSetup then
             --we can't select more targets, so cast the spell in here.
             g_token.lookAtMouse = false
             if g_castingEmoteSet and g_token.valid then
