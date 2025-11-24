@@ -169,6 +169,21 @@ local playersSeeEnemyHitpointsAsPercent = setting{
     classes = {"dmonly"},
 }
 
+setting{
+    id = "xpperlevel",
+    description = "Experience points per level",
+    editor = "slider",
+    round = true,
+    default = 16,
+    -- whole = true,
+    labelFormat = "%d",
+    min = 1,
+    max = 32,
+    storage = "game",
+    section = "game",
+    classes = {"dmonly"},
+}
+
 
 TokenUI.RegisterStatusBar{
     id = "lifebar",
