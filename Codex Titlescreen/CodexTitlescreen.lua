@@ -19,6 +19,12 @@ local function ScaleDimensions(dim)
     return dim * math.max(1, (dmhub.screenDimensions.x / dmhub.screenDimensions.y) / (1920 / 1080))
 end
 
+local function ScaleDimensionsToFill(dim)
+    local a = dmhub.screenDimensions.x / dmhub.screenDimensions.y
+    local b = 1920 / 1080
+    return dim * math.max(a/b, b/a)
+end
+
 local resistanceCurve = function(x)
     x = x * 2
     local negative = x < 0
@@ -2247,8 +2253,60 @@ function CreateTitlescreen(dialog, options)
 
                 local loadingScreen = gui.Panel {
                     classes = { "loadingScreen" },
-                    width = ScaleDimensions(1920),
-                    height = ScaleDimensions(1080),
+                    width = ScaleDimensionsToFill(1920),
+                    height = ScaleDimensionsToFill(1080),
+
+                    imageLoaded = function(element)
+                        if element.bgsprite == nil then
+                            return
+                        end
+
+                        local src_w = element.bgsprite.dimensions.x
+                        local src_h = element.bgsprite.dimensions.y
+
+                        local dst_w = ScaleDimensionsToFill(1920)
+                        local dst_h = ScaleDimensions(1080)
+
+                        print("ASPECT::", dst_w/dst_h, "vs", src_w/src_h)
+
+                        if dst_w/dst_h > src_w/src_h then
+                            --the destination is wider than the source. Fit to width.
+                            local new_src_h = src_w * (dst_h / dst_w)
+                            local letterbox = 1 - new_src_h/src_h
+
+                            local rect = {
+                                x1 = 0,
+                                y1 = letterbox*0.5,
+                                x2 = 1,
+                                y2 = 1 - letterbox*0.5,
+                            }
+
+                            element.selfStyle.imageRect = rect
+
+                        elseif dst_w/dst_h < src_w/src_h then
+                            --the destination is taller than the source. Fit to height.
+                            local new_src_w = src_h * (dst_w / dst_h)
+                            local letterbox = 1 - new_src_w/src_w
+                            local rect = {
+                                x1 = letterbox*0.5,
+                                y1 = 0,
+                                x2 = 1 - letterbox*0.5,
+                                y2 = 1,
+                            }
+
+                            element.selfStyle.imageRect = rect
+                        else
+                            element.selfStyle.imageRect = {
+                                x1 = 0,
+                                y1 = 0,
+                                x2 = 1,
+                                y2 = 1,
+                            }
+                        end
+
+
+
+                    end,
                     halign = "center",
                     valign = "center",
                     floating = true,
@@ -2413,12 +2471,12 @@ function CreateTitlescreen(dialog, options)
                 bgcolor = 'white',
 
                 autosizeimage = true,
-                width = 1.05 * ScaleDimensions(1920),
-                height = 1.05 * ScaleDimensions(1080),
+                width = 1.05 * ScaleDimensionsToFill(1920),
+                height = 1.05 * ScaleDimensionsToFill(1080),
 
                 screenResized = function(element)
-                    element.selfStyle.width = 1.05 * ScaleDimensions(1920)
-                    element.selfStyle.height = 1.05 * ScaleDimensions(1080)
+                    element.selfStyle.width = 1.05 * ScaleDimensionsToFill(1920)
+                    element.selfStyle.height = 1.05 * ScaleDimensionsToFill(1080)
                 end,
 
                 halign = 'center',
@@ -3501,8 +3559,8 @@ function CreateTitlescreen(dialog, options)
         floating = true,
 
         autosizeimage = true,
-        width = 1.05 * ScaleDimensions(1920),
-        height = 1.05 * ScaleDimensions(1080),
+        width = 1.05 * ScaleDimensionsToFill(1920),
+        height = 1.05 * ScaleDimensionsToFill(1080),
 
         screenResized = function(element)
             element.selfStyle.width = 1.05 * (1920 / dmhub.uiVerticalScale)
