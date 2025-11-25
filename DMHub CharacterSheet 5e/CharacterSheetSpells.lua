@@ -223,37 +223,6 @@ function Spell:Render(options)
 end
 
 
-function CreateCompendiumItemTooltip(spell, options)
-	if type(spell) == "table" and (getmetatable(spell) == nil or spell:try_get("notooltip") == true) then
-		return nil
-	end
-
-	--some heuristics to grow the width if we are rendering a very long spell
-	local width = options.width or (400 + math.floor(#spell.description/1000)*100)
-
-	local result = spell:Render({
-		pad = 24,
-		cornerRadius = 10,
-		bgimage = 'panels/square.png',
-		bgcolor = '#00000077',
-		width = width,
-	}, options)
-
-	if result == nil then
-		return result
-	end
-
-	if options.halign ~= nil then
-		result.selfStyle.halign = options.halign
-	end
-
-	if options.valign ~= nil then
-		result.selfStyle.valign = options.valign
-	end
-
-	return result
-end
-
 function CreateAbilityTooltip(spell, options)
 	return CreateCompendiumItemTooltip(spell, options)
 end

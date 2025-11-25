@@ -21,11 +21,12 @@ function CreateCompendiumItemTooltip(spell, options)
 		pad = 0,
 		cornerRadius = 0,
 		bgimage = 'panels/square.png',
-		bgcolor = '#000000fc',
+		bgcolor = '#000000fb',
 		borderWidth = 0,
 		borderFade = false,
         blurBackground = true,
 		width = width,
+        opacity = 1,
 	}, options)
 
 	if result == nil then
