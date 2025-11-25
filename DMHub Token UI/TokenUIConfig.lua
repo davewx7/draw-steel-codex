@@ -142,31 +142,21 @@ local playersSeePartyHitpoints = setting{
     classes = {"dmonly"},
 }
 
-local playersSeeEnemyHitpoints = setting{
-	id = "hpbarforenemy",
-	description = "Stamina Bars for enemies shown to players",
-	editor = "check",
-	default = false,
-
-    --this makes the setting get stored in the game's setting, shared by everyone.
-	storage = "game",
-
-    --this makes the setting show up as an editable setting in the 'game' area of settings.
-    section = "game",
-
-    --ensure only the DM can manipulate this setting.
-    classes = {"dmonly"},
-}
-
-local playersSeeEnemyHitpointsAsPercent = setting{
-    id = "hppctforenemy",
-    description = "Stamina bars for enemies show percentage",
-    editor = "check",
-    default = false,
-
+-- How to display an enemy (monster) stamina bar to players
+local enemyStamBarDisplay = setting{
+    id = "enemystambardisplay",
+    description = "Display mode for enemy stamina bars",
+    editor = "dropdown",
+    default = "none",
     storage = "game",
     section = "game",
     classes = {"dmonly"},
+    enum = {
+        { value = "none", text = "None (do not show)", },
+        { value = "bar", text = "Bar only" },
+        { value = "pct", text = "Bar & percentage" },
+        { value = "val", text = "Bar & stamina value" },
+    }
 }
 
 setting{
@@ -193,7 +183,10 @@ TokenUI.RegisterStatusBar{
     showToGM = function() return gmSeesHitpoints:Get() end,
     showToController = function() return playersSeeOwnHitpoints:Get() end,
     showToFriends = function() return playersSeePartyHitpoints:Get() end,
-    showToEnemies = function() return playersSeeEnemyHitpoints:Get() end,
+    showToEnemies = function() 
+        local display = enemyStamBarDisplay:Get() or "none"
+        return display ~= "none"
+    end,
 
     height = 9,
     width = 1,

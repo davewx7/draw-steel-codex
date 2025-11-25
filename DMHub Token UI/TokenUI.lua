@@ -787,27 +787,30 @@ TokenHud.RegisterPanel{
 									update = function(element, barInfo)
                                         if barInfo.text or barInfo.base.text then
                                             element.text = barInfo.text or barInfo.base.text
-                                        elseif (barInfo.temp or 0) > 0 then
-											if barInfo.showAsPct then
-												if barInfo.max and barInfo.max ~= 0 then
-													element.text = string.format("%d%%", round(100 * ((barInfo.value + barInfo.temp) / barInfo.max)))
-												else
-													element.text = "div/0"
-												end
-											else
-										    	element.text = string.format("%d+%d / %d", round(barInfo.value), round(barInfo.temp), round(barInfo.max))
-											end
                                         else
-											if barInfo.showAsPct then
-												if barInfo.max and barInfo.max ~= 0 then
-													element.text = string.format("%d%%", round(100 * (barInfo.value / barInfo.max)))
-												else
-													element.text = "div/0"
+											local showAs = barInfo.showAs or "bar"
+											if (barInfo.temp or 0) > 0 then
+												if showAs == "pct" then
+													if barInfo.max and barInfo.max ~= 0 then
+														element.text = string.format("%d%%", round(100 * ((barInfo.value + barInfo.temp) / barInfo.max)))
+													else
+														element.text = "div/0"
+													end
+												elseif showAs == "val" then
+													element.text = string.format("%d+%d / %d", round(barInfo.value), round(barInfo.temp), round(barInfo.max))
 												end
 											else
-										    	element.text = string.format("%d / %d", round(barInfo.value), round(barInfo.max))
+												if showAs == "pct" then
+													if barInfo.max and barInfo.max ~= 0 then
+														element.text = string.format("%d%%", round(100 * (barInfo.value / barInfo.max)))
+													else
+														element.text = "div/0"
+													end
+												elseif showAs == "val" then
+													element.text = string.format("%d / %d", round(barInfo.value), round(barInfo.max))
+												end
 											end
-                                        end
+										end
 									end,
 								}
 							},

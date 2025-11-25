@@ -322,8 +322,10 @@ end
 local g_squadPanelMovementLag = 0.5
 
 DrawSteelMinion.SquadHud = function(floorid, squad)
-    if dmhub.isDM == false and (not dmhub.GetSettingValue("hpbarforenemy")) then
-        return
+    if dmhub.isDM == false then
+        if dmhub.initiativeQueue == nil or dmhub.initiativeQueue.hidden or (dmhub.GetSettingValue("enemystambardisplay") == "none") then
+            return
+        end
     end
 
 	local sheetParent = dmhub.GetWorldSpacePanel(floorid, "minions-" .. squad.name)
@@ -360,7 +362,7 @@ DrawSteelMinion.SquadHud = function(floorid, squad)
 
             thinkTime = 0.2,
             think = function(element)
-                if dmhub.isDM == false and (not dmhub.GetSettingValue("hpbarforenemy")) then
+                if dmhub.isDM == false and (dmhub.GetSettingValue("enemystambardisplay") == "none") then
                     sheetParent:Destroy()
                     return
                 end
@@ -459,7 +461,12 @@ DrawSteelMinion.SquadHud = function(floorid, squad)
             if squad.damage_taken >= squad.maximum_health then
                 m_label.text = "DEAD"
             else
-                m_label.text = string.format("%d/%d", round(squad.maximum_health - squad.damage_taken), squad.maximum_health)
+                local display = dmhub.GetSettingValue("enemystambardisplay") or "none"
+                if dmhub.isDM or display == "val" then
+                    m_label.text = string.format("%d/%d", round(squad.maximum_health - squad.damage_taken), squad.maximum_health)
+                elseif display == "pct" then
+                    m_label.text = string.format("%d%%", 100 * round((squad.maximum_health - squad.damage_taken) / squad.maximum_health))
+                end
             end
 
             if #squad.tokens ~= m_numTokens then

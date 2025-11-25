@@ -931,7 +931,10 @@ TokenUI.RegisterStatusBar{
     showToGM = function() return dmhub.GetSettingValue("hpbarfordm") end,
     showToController = function() return dmhub.GetSettingValue("hpbarforownplayer") end,
     showToFriends = function() return dmhub.GetSettingValue("hpbarforparty") end,
-    showToEnemies = function() return dmhub.GetSettingValue("hpbarforenemy") end,
+    showToEnemies = function()
+        local display =  dmhub.GetSettingValue("enemystambardisplay") or "none"
+        return display ~= "none"
+    end,
 
     height = 9,
     width = 1,
@@ -968,19 +971,17 @@ TokenUI.RegisterStatusBar{
             return nil
         end
 
-        local showAsPct = false
-        if dmhub.isDM == false and dmhub.GetSettingValue("hppctforenemy") then
-            local token = dmhub.LookupToken(creature)
-            if token then
-                showAsPct = not token.isFriendOfPlayer
-            end
+        local showAs = "val"
+        if dmhub.isDM == false then
+            local settingVal = dmhub.GetSettingValue("enemystambardisplay")
+            if settingVal and #settingVal then showAs = settingVal end
         end
 
         return {
             value = creature:CurrentHitpoints(),
             max = creature:MaxHitpoints(),
             temp = creature:TemporaryHitpoints(),
-            showAsPct = showAsPct,
+            showAs = showAs,
             width = 1, --math.min(1, math.max(0.25, (max_hp*0.1)/creature:GetCalculatedCreatureSizeAsNumber())),
         }
     end
