@@ -106,7 +106,8 @@ CharacterModifier.TypeInfo.suppressabilities = {
     end,
 
     modifyAbility = function(modifier, creature, ability)
-        if modifier:has_key("name") and string.lower(ability.name) == string.lower(modifier.name) then
+        local abilityFilter = modifier:try_get("abilityFilter", "")
+        if abilityFilter == "" and modifier:has_key("name") and string.lower(ability.name) == string.lower(modifier.name) then
             if modifier:has_key("explanation") and modifier.explanation ~= "" then
                 ability = ability:MakeTemporaryClone()
                 ability.suppressExplanation = modifier.explanation
@@ -127,7 +128,6 @@ CharacterModifier.TypeInfo.suppressabilities = {
             end
         end
 
-        local abilityFilter = modifier:try_get("abilityFilter", "")
         if abilityFilter ~= "" then
             local symbols = creature:LookupSymbol{ability = ability}
             local passFilter = GoblinScriptTrue(dmhub.EvalGoblinScriptDeterministic(abilityFilter, symbols, 1, "Ability filter"))
