@@ -1,5 +1,9 @@
 local mod = dmhub.GetModLoading()
 
+function creature:GetFollowers()
+    return {}
+end
+
 function character:GetFollowers()
     return self:try_get("followers") or {}
 end
