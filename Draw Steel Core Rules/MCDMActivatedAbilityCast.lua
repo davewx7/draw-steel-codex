@@ -55,7 +55,7 @@ GameSystem.RegisterGoblinScriptField{
             local potencyApplied = c.potencyApplied and c.potencyApplied[targetid] or 0
             local value = caster:Potency()
             if potency ~= nil and type(potency) == "string" then
-                value = caster:CalcuatePotencyValue(potency)
+                value = caster:CalculatePotencyValue(potency)
             elseif potency ~= nil and type(potency) == "number" then
                 value = potency
             else
