@@ -60,7 +60,8 @@ function RichFollower.CreateDisplay(self)
             borderColor = "white",
             cornerRadius = 4,
             fontSize = 12,
-            hmargin = 8,
+            hmargin = 32,
+            vmargin = 8,
         },
         {
             priority = 10,
@@ -145,7 +146,7 @@ function RichFollower.CreateDisplay(self)
                     styles = assignButtonStyles,
                     classes = {"assign-button"},
                     width = "auto",
-                    height = 40,
+                    height = 68,
                     lmargin = 8,
                     vpad = 4,
                     data = {
@@ -218,8 +219,8 @@ function RichFollower.CreateDisplay(self)
                     children = {
                         gui.CreateTokenImage(token, {
                             classes = {"token-image-frame"},
-                            width = 40,
-                            height = 40,
+                            width = 64,
+                            height = 64,
                             halign = "left",
                             valign = "center",
                             interactable = true,
@@ -264,6 +265,7 @@ function RichFollower.CreateDisplay(self)
     resultPanel = gui.Panel{
         styles = {
             {
+                selectors = {"follower-panel"},
                 borderWidth = 1,
                 borderColor = "#ffffff88",
             },
@@ -277,6 +279,7 @@ function RichFollower.CreateDisplay(self)
                 borderColor = "yellow",
             }
         },
+        classes = {"follower-panel"},
         flow = "vertical",
         width = "100%",
         height = "auto",
