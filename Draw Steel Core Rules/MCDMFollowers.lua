@@ -5,7 +5,7 @@ function creature:GetFollowers()
 end
 
 function character:GetFollowers()
-    return self:try_get("followers") or {}
+    return self:get_or_add("followers", {})
 end
 
 function monster:GetFollowers()

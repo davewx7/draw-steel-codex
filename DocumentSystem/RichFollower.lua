@@ -63,72 +63,77 @@ function RichFollower.CreateDisplay(self)
     }
 
     local assignButtons = {}
-    for _, token in ipairs(dmhub.GetTokens{playerControlled = true}) do
-        if token.properties and token.properties:IsHero() then
-            assignButtons[#assignButtons+1] = gui.Panel{
-                width = "auto",
-                height = 40,
-                lmargin = 20,
-                press = function(element)
-                    local followers = token.properties:GetFollowers()
-                    if followers then
-                        local retainerToken
-                        if self.follower.type == "retainer" then
-                            local locs = token.properties:AdjacentLocations()
-                            local loc = #locs and locs[1] or token.properties.locsOccupying[1]
-                            retainerToken = game.SpawnTokenFromBestiaryLocally(self.follower.retainerToken, loc, {fitLocatoin = true})
-                            retainerToken.ownerId = token.ownerId
-                            retainerToken.name = self.follower.name
-                            retainerToken:UploadToken()
-                            game.UpdateCharacterTokens()
-                        end
-                        token:ModifyProperties{
-                            description = "Grant a Follower",
-                            undoable = false,
-                            execute = function()
-                                local newFollower = self.follower:ToTable()
-                                if newFollower.type == "retainer" then newFollower.retainerToken = retainerToken.id end
-                                followers[#followers + 1] = newFollower
+    if dmhub.isDM then
+        for _, token in ipairs(dmhub.GetTokens{playerControlled = true}) do
+            if token.properties and token.properties:IsHero() then
+                assignButtons[#assignButtons+1] = gui.Panel{
+                    width = "auto",
+                    height = 40,
+                    lmargin = 8,
+                    vpad = 4,
+                    press = function(element)
+                        local followers = token.properties:GetFollowers()
+                        if followers then
+                            local retainerToken
+                            if self.follower.type == "retainer" then
+                                local locs = token.properties:AdjacentLocations()
+                                local loc = #locs and locs[1] or token.properties.locsOccupying[1]
+                                retainerToken = game.SpawnTokenFromBestiaryLocally(self.follower.retainerToken, loc, {fitLocatoin = true})
+                                retainerToken.ownerId = token.ownerId
+                                retainerToken.name = self.follower.name
+                                retainerToken:UploadToken()
+                                game.UpdateCharacterTokens()
                             end
-                        }
-                    end
-                end,
-                children = {
-                    gui.CreateTokenImage(token, {
-                        width = 40,
-                        height = 40,
-                        halign = "left",
-                        valign = "center",
-                        interactable = true,
-                        refresh = function(element)
-                            if token == nil or not token.valid then return end
-                            element:FireEvent("token", token)
+                            token:ModifyProperties{
+                                description = "Grant a Follower",
+                                undoable = false,
+                                execute = function()
+                                    local newFollower = self.follower:ToTable()
+                                    if newFollower.type == "retainer" then newFollower.retainerToken = retainerToken.id end
+                                    followers[#followers + 1] = newFollower
+                                end
+                            }
                         end
-                    }),
-                    gui.Label{
-                        width = "auto",
-                        height = 20,
-                        fontSize = 12,
-                        valign = "bottom",
-                        halign = "left",
-                        hmargin = 24,
-                        bgimage = "panels/square.png",
-                        bgcolor = "#333333",
-                        border = 1,
-                        borderColor = "white",
-                        cornerRadius = 4,
-                        text = "Assign to " .. token.name,
-                    }
-                },
-            }
+                    end,
+                    children = {
+                        gui.CreateTokenImage(token, {
+                            width = 40,
+                            height = 40,
+                            halign = "left",
+                            valign = "center",
+                            interactable = true,
+                            border = 0,
+                            refresh = function(element)
+                                if token == nil or not token.valid then return end
+                                element:FireEvent("token", token)
+                            end
+                        }),
+                        gui.Label{
+                            width = "auto",
+                            height = 20,
+                            fontSize = 12,
+                            valign = "bottom",
+                            halign = "left",
+                            hmargin = 24,
+                            bgimage = "panels/square.png",
+                            bgcolor = "#333333",
+                            border = 1,
+                            borderColor = "white",
+                            cornerRadius = 4,
+                            text = "Assign to " .. token.name,
+                        }
+                    },
+                }
+            end
         end
     end
 
     local footerPanel = gui.Panel{
         width = "100%",
-        height = 40,
+        height = "auto",
         vpad = 8,
         flow = "horizontal",
+        wrap = true,
         children = assignButtons,
     }
 
@@ -149,7 +154,7 @@ function RichFollower.CreateDisplay(self)
             }
         },
         flow = "vertical",
-        width = 400,
+        width = "100%",
         height = "auto",
         pad = 2,
         halign = "left",
