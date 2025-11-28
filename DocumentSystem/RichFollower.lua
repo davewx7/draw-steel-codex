@@ -122,6 +122,8 @@ function RichFollower.CreateDisplay(self)
                                     followers[#followers + 1] = newFollower
                                 end
                             }
+                            self.follower:AddAssignedTo(token.id)
+                            resultPanel:FireEventTree("refreshTag")
                         end
                     end,
                     children = {
