@@ -1098,7 +1098,7 @@ local function AbilityHeading(args)
 
         dehover = function(element)
             if m_showingAbility then
-                CharacterPanel.HideAbility(m_showingAbility)
+                CharacterPanel.HideAbility(m_ability)
             end
         end,
 
