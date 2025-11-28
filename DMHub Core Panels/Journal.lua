@@ -33,6 +33,21 @@ function GetCurrentAdventuresDocument()
     return doc
 end
 
+Commands.clearadventuredocuments = function(str)
+    if str == "help" then
+        dmhub.Log("Usage: /clearadventuredocuments\n Clears the current adventure document list.")
+    end
+
+    local doc = GetCurrentAdventuresDocument()
+    doc:BeginChange()
+    for k,v in pairs(doc.data) do
+        if doc.data[k] ~= nil then
+            doc.data[k] = nil
+        end
+    end
+    doc:CompleteChange()
+end
+
 Commands.setadventuredocument = function(str)
     if str == "help" then
         dmhub.Log(
@@ -41,14 +56,16 @@ Commands.setadventuredocument = function(str)
     end
 
     local args = Commands.SplitArgs(str)
+    print("ADVENTURE:: SET", str, "->", args)
     if #args ~= 2 then
-        print("LINK:: INVALID")
+        print("ADVENTURE:: INVALID")
         return
     end
 
     local ord = tonumber(args[1])
 
     local name = string.lower(args[2])
+    print("ADVENTURE:: SETTING", name, "TO", ord)
 
     local customDocs = dmhub.GetTable(CustomDocument.tableName) or {}
     for k, doc in unhidden_pairs(customDocs) do
@@ -63,12 +80,12 @@ Commands.setadventuredocument = function(str)
                 }
             end
             doc:CompleteChange("Change variable")
-            print("LINK:: Changed mod document")
+            print("ADVENTURE:: MODIFIED DOCUMENT")
             return
         end
     end
 
-    print("LINK:: COULD NOT FIND DOC", name)
+    print("ADVENTURE:: COULD NOT FIND DOC", name)
 end
 
 
