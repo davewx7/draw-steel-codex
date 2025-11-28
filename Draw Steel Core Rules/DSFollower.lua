@@ -35,7 +35,20 @@ function Follower.GetType(self)
 end
 
 function Follower.Describe(self)
-    local s = "<b>Type:</b> " .. self:GetType()
+
+    local function ucFirst(s)
+        return s:sub(1,1):upper() .. s:sub(2)
+    end
+    local function numToString(v)
+        local n = tonumber(v)
+        if n then
+            return string.format("%d", math.floor(n))
+        end
+        return "?"
+    end
+
+    local type = self:GetType()
+    local s = string.format("<b>%s Follower</b>", ucFirst(type))
 
     if self.type == "artisan" or self.type == "sage" then
         if self:try_get("ancestry") then
@@ -63,6 +76,37 @@ function Follower.Describe(self)
                 sList = sList .. langs[id].name
             end
             s = s .. sList
+        end
+    else
+        local id = self.retainerToken or ""
+        if id and #id > 0 then
+            local node = assets:GetMonsterNode(id)
+            if node and node.monster and node.monster.info then
+                local t = node.monster.info
+                s = string.format("%s\n%s", s, t.description)
+                if t.properties then
+                    local m = t.properties
+
+                    local keywords = m:Keywords()
+                    if keywords and next(keywords) then
+                        local keys = {}
+                        for key, value in pairs(keywords) do
+                            if value then
+                                keys[#keys + 1] = key
+                            end
+                        end
+                        s = string.format("%s\n%s", s, table.concat(keys, ", "))
+                    end
+
+                    local level = numToString(m:Level())
+                    local role = m:Role() or "Retainer"
+                    s = string.format("%s\nLevel %s %s", s, level, ucFirst(role))
+
+                    local stam = numToString(m.max_hitpoints)
+                    local speed = numToString(m.walkingSpeed)
+                    s = string.format("%s\n%s Stamina, %s Speed", s, stam, speed)
+                end
+            end
         end
     end
 

@@ -11,6 +11,33 @@ end
 function RichFollower.CreateDisplay(self)
     local resultPanel
 
+    local assignButtonStyles = {
+        {
+            priority = 10,
+            selectors = {"assign-button"},
+            bgimage = "panels/square.png",
+            borderWidth = 0,
+            cornerRadius = 6,
+            pad = 4,
+        },
+        {
+            priority = 10,
+            selectors = {"assign-button", "hover"},
+            bgcolor = "#333333",
+            borderColor = "#666666",
+            borderWidth = 1,
+            transitionTime = 0.2
+        },
+        {
+            priority = 10,
+            selectors = {"assign-button", "press"},
+            bgcolor = "#808080",
+            borderColor = "#F0F0F0",
+            borderWidth = 1,
+            transitionTime = 0.2
+        }
+    }
+
     local titleLabel = gui.Label{
         width = "100%",
         height = 20,
@@ -67,6 +94,8 @@ function RichFollower.CreateDisplay(self)
         for _, token in ipairs(dmhub.GetTokens{playerControlled = true}) do
             if token.properties and token.properties:IsHero() then
                 assignButtons[#assignButtons+1] = gui.Panel{
+                    styles = assignButtonStyles,
+                    classes = {"assign-button"},
                     width = "auto",
                     height = 40,
                     lmargin = 8,
