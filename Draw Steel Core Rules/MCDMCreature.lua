@@ -3061,8 +3061,7 @@ function creature.TakeDamage(self, amount, note, info)
     eventArg.hasattacker = eventArg.attacker ~= nil
     eventArg.surges = info.surges or 0
 
-    if (not info.doesNotTrigger) and amount > 0 then
-        print("LOSEHITPOINTS:: DO LOSE", info.doesNotTrigger)
+    if (not info.doesNotTrigger) and original_amount > 0 then
         self:DispatchEvent("losehitpoints", eventArg)
     end
 
