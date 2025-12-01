@@ -1015,6 +1015,27 @@ Commands.var = function(str)
     return doc.data[str]
 end
 
+local function QueryConvertValue(a)
+    if tonumber(a) ~= nil then
+        a = tonumber(a)
+    else
+        if a == false or a == "" or a == nil then
+            a = 0
+        else
+            a = 1
+        end
+    end
+
+    return a
+end
+
+local function Truthy(a)
+    if a == false or a == "" or a == nil or a == 0 then
+        return false
+    end
+    return true
+end
+
 -- (plus, minus, divide, times) (and, or) (less than, greater than, less equal, greater equal, equal, not equal)
 Commands.query = function(str)
     local args = Commands.SplitArgs(str)
@@ -1038,30 +1059,21 @@ Commands.query = function(str)
             end
             return arg
         end
+    elseif #args == 2 then
+        local operation = args[1]
+        local a = Commands.query(args[2])
+        a = QueryConvertValue(a)
+
+        if operation == "not" then
+            return not Truthy(a)
+        end
     elseif #args == 3 then
         local operation = args[2]
         local a = Commands.query(args[1])
         local b = Commands.query(args[3])
 
-        if tonumber(a) ~= nil then
-            a = tonumber(a)
-        else
-            if a == false or a == "" or a == nil then
-                a = 0
-            else
-                a = 1
-            end
-        end
-
-        if tonumber(b) ~= nil then
-            b = tonumber(b)
-        else
-            if b == false or b == "" or b == nil then
-                b = 0
-            else
-                b = 1
-            end
-        end
+        a = QueryConvertValue(a)
+        b = QueryConvertValue(b)
 
         --plus
         if operation == "+" then
@@ -1149,26 +1161,16 @@ Commands.query = function(str)
                 end
                 return false
             end
+        end
 
-            --and
-            if operation == "and" then
-                if a ~= nil and b ~= nil then
-                    if a and b then
-                        return true
-                    end
-                    return false
-                end
-            end
+        --and
+        if operation == "and" then
+            return Truthy(a) and Truthy(b)
+        end
 
-            --or
-            if operation == "or" then
-                if a ~= nil and b ~= nil then
-                    if a or b then
-                        return true
-                    end
-                    return false
-                end
-            end
+        --or
+        if operation == "or" then
+            return Truthy(a) or Truthy(b)
         end
     end
 end
