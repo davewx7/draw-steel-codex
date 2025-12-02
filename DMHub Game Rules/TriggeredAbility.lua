@@ -216,6 +216,13 @@ TriggeredAbility.triggers = {
 	{
 		id = "beginturn",
 		text = "Start of Turn",
+        symbols = {
+            order = {
+                name = "Order",
+                type = "number",
+                desc = "The number of the creature within the group of creatures taking their turn. 1 = first creature, 2 = second creature, and so forth.",
+            },
+        }
 	},
 	{
 		id = "endturn",

@@ -7760,13 +7760,28 @@ function creature:BeginTurn()
 
     self:CheckAuraExpiration("nextturn")
     
+	local token = dmhub.LookupToken(self)
+    local order = 1
+
+    if token ~= nil then
+		local initiativeid = InitiativeQueue.GetInitiativeId(token)
+	    local tokens = InitiativeQueue.GetTokensForInitiativeId(initiativeid)
+        if tokens ~= nil then
+            for i,tok in ipairs(tokens) do
+                if tok.charid == token.charid then
+                    order = i
+                    break
+                end
+            end
+        end
+    end
+
+    print("BeginTurn: order =", order)
 	dmhub.Coroutine(function()
         self:DispatchEventAndWait("prestartturn", {})
-
-        self:DispatchEvent("beginturn", {})
+        self:DispatchEvent("beginturn", {order = order})
     end)
 
-	local token = dmhub.LookupToken(self)
 
 	if token ~= nil then
 		local concentrationList = self:try_get("concentrationList")
