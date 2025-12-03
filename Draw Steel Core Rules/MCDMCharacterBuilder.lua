@@ -687,18 +687,6 @@ end
 function CharSheet.BuilderSettingsPanel()
 	local banner
 
-	local characterTypePanel = CharSheet.FeatureDetailsPanel{
-		alert = function(element)
-			banner:FireEvent("showAlert")
-		end,
-	}
-
-	local featsPanel = CharSheet.FeatureDetailsPanel{
-		alert = function(element)
-			banner:FireEvent("showAlert")
-		end,
-	}
-
 	local characteristicsPanel = CharSheet.BackgroundCharacteristicPanel{
 		GetSelectedBackground = function()
 			return g_creature:CharacterType()
@@ -712,12 +700,26 @@ function CharSheet.BuilderSettingsPanel()
         complicationOptions[#complicationOptions+1] = {
             id = k,
             text = complication.name,
+            tooltip = function()
+                return complication:Render{
+                    x = 8,
+                    halign = "right",
+                    width = 400,
+                    bgimage = true,
+                    bgcolor = Styles.backgroundColor,
+                    borderColor = Styles.textColor,
+                    borderWidth = 2,
+                    cornerRadius = 8,
+                }
+
+            end,
         }
     end
 
     local complicationPanel
     complicationPanel = gui.Panel {
         vmargin = 32,
+        halign = "center",
         width = "50%",
         height = "auto",
         flow = "vertical",
@@ -871,6 +873,7 @@ function CharSheet.BuilderSettingsPanel()
 
 			gui.Panel{
 				vmargin = 32,
+                width = "auto",
 				height = 40,
 				halign = "center",
 				classes = {"formPanel"},
@@ -947,28 +950,9 @@ function CharSheet.BuilderSettingsPanel()
 				height = "auto",
 				flow = "horizontal",
 				complicationPanel,
-				gui.Panel{
-					width = "100%",
-					height = "auto",
-					flow = "vertical",
-					pad = 15,
-					vmargin = 32,
-					vscroll = true,
-					characterTypePanel,
-					featsPanel,
-				},
 			},
 
 			refreshBuilder = function(element)
-				local chartype = g_creature:CharacterType()
-				characterTypePanel.data.criteria = {
-					characterType = chartype
-				}
-				characterTypePanel.data.hide = (chartype == nil)
-				featsPanel.data.hide = false
-				featsPanel.data.criteria = {
-					feat = "*",
-				}
 			end,
 		},
 
