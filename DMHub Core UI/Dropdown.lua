@@ -75,6 +75,7 @@ local dropdownPopupStyles = {
 --- @class DropdownOption
 --- @field id string|true|false
 --- @field text string
+--- @field tooltip nil|string|fun():string Tooltip text to show when hovering over this option.
 
 --- @class Dropdown:Panel
 --- @field idChosen nil|true|false|string The id of the option currently chosen.
@@ -242,6 +243,7 @@ function gui.Dropdown(args)
 			end
 
 			local CreateLabel = function(option)
+                local tooltip = option.tooltip
 				local text = ResolveFunction(option.text)
 				if m_keybinds ~= nil then
 					for _,keybind in ipairs(m_keybinds) do
@@ -259,10 +261,22 @@ function gui.Dropdown(args)
 
                 local panel = ResolveFunction(option.panel)
                 if panel == nil then
+                    local hover = nil
+                    if tooltip ~= nil then
+                        hover = function(element)
+                            local tip = ResolveFunction(tooltip)
+                            if type(tip) == "string" then
+                                gui.Tooltip(tip)(element)
+                            else
+                                element.tooltip = tip
+                            end
+                        end
+                    end
                     panel = gui.Label{
                         classes = classes,
                         fontSize = args.fontSize,
                         text = text,
+                        hover = hover,
                     }
                 end
 
