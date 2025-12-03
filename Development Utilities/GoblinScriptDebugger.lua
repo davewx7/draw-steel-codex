@@ -1,10 +1,10 @@
 local mod = dmhub.GetModLoading()
 
-if devmode() then
 LaunchablePanel.Register{
 	name = "Goblin Script Debugger",
 	icon = mod.images.goblinScriptDebuggerIcon,
 	folder = "Development Tools",
+    devonly = true,
 	content = function()
 
         local AddDebugEntries
@@ -450,4 +450,3 @@ LaunchablePanel.Register{
 		return dialogPanel
 	end,
 }
-end
