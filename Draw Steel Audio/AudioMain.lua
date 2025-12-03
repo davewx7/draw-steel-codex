@@ -909,7 +909,7 @@ dmhub.TokenMovingOnPath = function(args)
         sound = "Foot.Crawl_Generic"
     end
 
-    if burrowing or flying or inwater or args.path.movementType == "walk" or args.path.movementType == "shift" then
+    if burrowing or flying or inwater or args.path.movementType == "walk" or args.path.movementType == "swim" or args.path.movementType == "shift" then
         --the size of the creature. Use the raw token radius squared to emphasize
         --large creatures being large.
         --local creatureSize = args.token.radiusInTiles*args.token.radiusInTiles
