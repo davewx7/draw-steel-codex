@@ -1968,11 +1968,13 @@ function creature:GetActivatedAbilities(options)
             mod.mod:FillActivatedAbilities(mod, self, result)
         end
     end
-
+    
     if self:has_key("ongoingEffects") then
         for i, cond in ipairs(self.ongoingEffects) do
             if cond:try_get('endAbility') ~= nil and not cond:Expired() then
                 result[#result + 1] = cond.endAbility
+            elseif cond:try_get("stolenAbility") ~= nil and not cond:Expired() then
+                result[#result + 1] = cond.stolenAbility
             end
         end
     end

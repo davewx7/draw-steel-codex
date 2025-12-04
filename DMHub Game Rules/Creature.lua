@@ -5930,6 +5930,11 @@ function creature:ApplyOngoingEffect(ongoingEffectid, duration, casterInfo, opti
         bondid = options.guid
     end
 
+	local stolenAbility = nil
+	if options.stolenAbility ~= nil then
+		stolenAbility = options.stolenAbility
+	end
+
 	local found = false
 	if not ongoingEffect.stackable then
 		for i,cond in ipairs(ongoingEffects) do
@@ -5939,6 +5944,7 @@ function creature:ApplyOngoingEffect(ongoingEffectid, duration, casterInfo, opti
                     casterSet[cond.casterInfo.tokenid] = true
                 end
 
+				cond.stolenAbility = stolenAbility
 				cond.endAbility = ongoingEffect:GetEndAbility()
 				cond.casterInfo = casterInfo
 				cond.seq = highestSeq + 1
@@ -5965,6 +5971,7 @@ function creature:ApplyOngoingEffect(ongoingEffectid, duration, casterInfo, opti
     				cond.stacks = (cond.stacks or 1) + (options.stacks or 1)
                 end
 
+				cond.stolenAbility = stolenAbility
 				cond.endAbility = ongoingEffect:GetEndAbility()
 				cond.casterInfo = casterInfo
                 cond.bondid = bondid
@@ -5980,6 +5987,7 @@ function creature:ApplyOngoingEffect(ongoingEffectid, duration, casterInfo, opti
 		ongoingEffects[#ongoingEffects+1] = CharacterOngoingEffectInstance.Create{
 			ongoingEffectid = ongoingEffectid,
 			duration = duration,
+			stolenAbility = stolenAbility,
 			endAbility = ongoingEffect:GetEndAbility(),
 			casterInfo = casterInfo,
 			stacks = cond(options.stacks == nil, 1, options.stacks),
