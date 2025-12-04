@@ -65,7 +65,7 @@ function ActivatedAbilityStealAbilityBehavior:EditorItems(parentPanel)
 	return result
 end
 
-function ActivatedAbilityStealAbilityBehavior.ShowChoiceDialog(choices, dialogOptions)
+function ActivatedAbilityStealAbilityBehavior.ShowChoiceDialog(choices, dialogOptions, casterToken)
 	dialogOptions = dialogOptions or {}
 	local chosenOption = nil
 	local canceled = false
@@ -94,6 +94,14 @@ function ActivatedAbilityStealAbilityBehavior.ShowChoiceDialog(choices, dialogOp
 				end
 
 				chosenOption = choices[i]
+			end,
+			hover = function(element)
+				element.tooltip = CreateAbilityTooltip(option, {
+					token = casterToken,
+					halign = "right",
+					width = 500,
+					pad = 8,
+				})
 			end,
 		}
 
@@ -194,7 +202,7 @@ function ActivatedAbilityStealAbilityBehavior:Cast(ability, casterToken, targets
 
     for _, target in ipairs(targets) do
         local targetCreature = target.token.properties
-        local candidateAbilities = targetCreature:GetActivatedAbilities()
+        local candidateAbilities = targetCreature:GetActivatedAbilities{ characterSheet = true }
         for _,a in ipairs(candidateAbilities) do
             local passesFilter = true
             if filter ~= "" then
@@ -218,7 +226,7 @@ function ActivatedAbilityStealAbilityBehavior:Cast(ability, casterToken, targets
     chosenAbility = ActivatedAbilityStealAbilityBehavior.ShowChoiceDialog(results, {
         title = "Steal Ability",
         buttonText = "Steal",
-    })
+    }, casterToken)
     if chosenAbility == nil then
         return
     end
