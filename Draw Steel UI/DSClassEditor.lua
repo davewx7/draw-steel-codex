@@ -833,14 +833,14 @@ function ClassLevel:CreateEditor(classOrRace, levelNum, params)
 				id = "paste",
 				text = function()
 			        local clipboardItem = dmhub.GetInternalClipboard()
-                    if clipboardItem == nil or (clipboardItem.typeName ~= 'CharacterFeature' and clipboardItem.typeName ~= 'CharacterFeatureChoice' and clipboardItem.typeName ~= 'CharacterSkillChoice') then
+                    if clipboardItem == nil or (clipboardItem.typeName ~= 'CharacterFeature' and clipboardItem.typeName ~= 'CharacterFeatureChoice' and clipboardItem.typeName ~= 'CharacterFeatChoice' and clipboardItem.typeName ~= 'CharacterSkillChoice') then
                         return "Paste"
                     end
                     return "Paste " .. clipboardItem.name
                 end,
                 hidden = function()
 			        local clipboardItem = dmhub.GetInternalClipboard()
-                    return clipboardItem == nil or (clipboardItem.typeName ~= 'CharacterFeature' and clipboardItem.typeName ~= 'CharacterFeatureChoice' and clipboardItem.typeName ~= 'CharacterSkillChoice')
+                    return clipboardItem == nil or (clipboardItem.typeName ~= 'CharacterFeature' and clipboardItem.typeName ~= 'CharacterFeatureChoice' and clipboardItem.typeName ~= 'CharacterFeatChoice' and clipboardItem.typeName ~= 'CharacterSkillChoice')
                 end,
 			}
 
