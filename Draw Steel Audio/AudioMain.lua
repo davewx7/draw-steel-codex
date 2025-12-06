@@ -79,7 +79,7 @@ audio.SoundEvent{
 audio.SoundEvent{
     name = "Notify.Diceroll",
     mixgroup = "ui",
-    sounds = {"Notify_DiceRoll_v2_01.wav","Notify_DiceRoll_v2_02.wav","Notify_DiceRoll_v2_03.wav"},
+    sounds = {"Notify_DiceRoll_v3_01.wav","Notify_DiceRoll_v3_02.wav","Notify_DiceRoll_v3_03.wav"},
     volume = 0.75,
     pitchRand = 0.2,
     ignoreDuplicates = 1,
@@ -113,6 +113,17 @@ audio.SoundEvent{
     volume = 0.7,
     ignoreDuplicates = 0.2, --ignore duplicates for 0.2 seconds
 }
+
+--Temp Stamina Gain
+audio.SoundEvent{
+    name = "Notify.TempStamina_Gain",
+    mixgroup = "ui",
+    sounds = {"Notify_TempStam_Gain_v1_01.wav"},
+    volume = 0.3,
+    ignoreDuplicates = 0.2,
+    ignoreDuplicates = 0.2,--ignore duplicates for 0.2 seconds
+}
+
 
 --Implemented
 --plays when a trigger is used
@@ -411,11 +422,54 @@ audio.SoundEvent{
 audio.SoundEvent{
     name = "Ability.Teleport_Generic",
     mixgroup = "gameplay",
-    sounds = {"Abl_Teleport_Gnrc_v1_01.wav"},
+    sounds = {"Abl_Teleport_Gnrc_v2_01.wav"},
+    volume = 0.4,
+    pitchRand = 0.05,
+    ignoreDuplicates = 0.1,
+}
+
+--Hide
+
+audio.SoundEvent{
+    name = "Ability.Hide_Start",
+    mixgroup = "gameplay",
+    sounds = {"Abl_Hide_Start_v1_01.wav"},
     volume = 0.5,
     pitchRand = 0.05,
     ignoreDuplicates = 0.1,
 }
+
+audio.SoundEvent{
+    name = "Ability.Hide_End",
+    mixgroup = "gameplay",
+    sounds = {"Abl_Hide_End_v1_01.wav"},
+    volume = 0.5,
+    pitchRand = 0.05,
+    ignoreDuplicates = 0.1,
+}
+
+--Disguise
+
+audio.SoundEvent{
+    name = "Ability.Disguise_Start",
+    mixgroup = "gameplay",
+    sounds = {"Abl_Disguise_Start_v1_01.wav"},
+    volume = 0.5,
+    pitchRand = 0.05,
+    ignoreDuplicates = 0.1,
+}
+
+audio.SoundEvent{
+    name = "Ability.Disguise_End",
+    mixgroup = "gameplay",
+    sounds = {"Abl_Disguise_End_v1_01.wav"},
+    volume = 0.2,
+    pitchRand = 0.05,
+    ignoreDuplicates = 0.1,
+}
+
+
+
 
 --Implemented: plays when landing after a fall.
 audio.SoundEvent{
@@ -517,7 +571,7 @@ audio.SoundEvent{
 audio.SoundEvent{
     name = "Attack.Hit_psychic",
     mixgroup = "gameplay",
-    sounds = {"Atk_Hit/Atk_Hit_Psychic_v1_01.wav","Atk_Hit/Atk_Hit_Psychic_v1_02.wav","Atk_Hit/Atk_Hit_Psychic_v1_03.wav","Atk_Hit/Atk_Hit_Psychic_v1_04.wav"},
+    sounds = {"Atk_Hit/Atk_Hit_Psychic_v2_01.wav","Atk_Hit/Atk_Hit_Psychic_v2_02.wav","Atk_Hit/Atk_Hit_Psychic_v2_03.wav","Atk_Hit/Atk_Hit_Psychic_v2_04.wav"},
     volume = 1.0,
     ignoreDuplicates = 0.2,
     pitchRand = 0.2,
@@ -701,6 +755,7 @@ audio.SoundEvent{
     pitchRand = 0.3,
 }
 
+--Traps
 
 
 audio.SoundEvent{
@@ -710,6 +765,16 @@ audio.SoundEvent{
     volume = 0.4,
     ignoreDuplicates = 1,
 }
+
+audio.SoundEvent{
+    name = "Obj.Trap_Disarm",
+    mixgroup = "gameplay",
+    sounds = {"obj/OBJ_Trap_Disarm_v1_01.wav"},
+    volume = 0.2,
+    ignoreDuplicates = 1,
+}
+
+
 
 
 
