@@ -130,6 +130,58 @@ LaunchablePanel.Register {
                     }
                 },
 
+                ControlEntry{
+                    name = "Selector Button",
+                    control = gui.Panel{
+                        classes = {"selector-btn-test-controller"},
+                        height = "auto",
+                        vpad = 10,
+                        halign = "center",
+                        flow = "vertical",
+                        setAvailable = function(element, isAvailable)
+                            local selectorButton = element:Get("test-selector-button")
+                            if selectorButton then
+                                selectorButton:FireEvent("setAvailable", isAvailable)
+                            end
+                        end,
+                        setSelected = function(element, isSelected)
+                            local selectorButton = element:Get("test-selector-button")
+                            if selectorButton then
+                                selectorButton:FireEvent("setSelected", isSelected)
+                            end
+                        end,
+                        gui.SelectorButton{
+                            id = "test-selector-button",
+                            text = "Devil",
+                            available = true,
+                            selected = false,
+                        },
+                        gui.Check{
+                            tmargin = 6,
+                            text = "Selected",
+                            value = false,
+                            placement = "left",
+                            change = function(element)
+                                local controller = element:FindParentWithClass("selector-btn-test-controller")
+                                if controller then
+                                    controller:FireEvent("setSelected", element.value)
+                                end
+                            end
+                        },
+                        gui.Check{
+                            text = "Available",
+                            value = true,
+                            placement = "left",
+                            change = function(element)
+                                local controller = element:FindParentWithClass("selector-btn-test-controller")
+                                if controller then
+                                    controller:FireEvent("setAvailable", element.value)
+                                end
+                            end
+                        }
+                    }
+                },
+
                 ControlEntry {
                     name = "Beveled panel",
                     control = gui.Panel {
