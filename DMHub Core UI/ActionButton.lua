@@ -1,9 +1,27 @@
 local mod = dmhub.GetModLoading()
 
+local gradient = {
+    type = "radial",
+    point_a = {x = 0.5, y = -0.9},
+    point_b = {x = 0.5, y = 0.4},
+    stops = {
+        {position = 0.00, color = "#BC9B7BFF"},
+        {position = 0.15, color = "#BC9B7BE2"},
+        {position = 0.28, color = "#BC9B7BC5"},
+        {position = 0.40, color = "#BC9B7BA8"},
+        {position = 0.51, color = "#BC9B7B8B"},
+        {position = 0.61, color = "#BC9B7B6E"},
+        {position = 0.70, color = "#BC9B7B51"},
+        {position = 0.78, color = "#BC9B7B34"},
+        {position = 0.85, color = "#BC9B7B17"},
+        {position = 1.00, color = "#BC9B7B00"},
+    }
+}
+
 local actionButtonStyles = {
     {
         selectors = {"action-button", "hover"},
-        brightness = 1.05,
+        brightness = 1.25,
     },
     {
         selectors = {"action-button", "press"},
@@ -16,6 +34,15 @@ local actionButtonStyles = {
     {
         selectors = {"action-button-label"},
         color = "#966D4B",
+    },
+    {
+        selectors = {"action-button-hover"},
+        bgcolor = "clear",
+    },
+    {
+        selectors = {"action-button-hover", "parent:hover"},
+        bgcolor = "white",
+        gradient = gui.Gradient(gradient),
     },
     {
         selectors = {"unavailable"},
@@ -141,23 +168,22 @@ local function _actionButton(options)
                 element:SetClass("collapsed", not selected)
             end,
 
-            gradient = gui.Gradient{
-                type = "radial",
-                point_a = {x = 0.5, y = -0.9},
-                point_b = {x = 0.5, y = 0.4},
-                stops = {
-                    {position = 0.00, color = "#BC9B7BFF"},
-                    {position = 0.15, color = "#BC9B7BE2"},
-                    {position = 0.28, color = "#BC9B7BC5"},
-                    {position = 0.40, color = "#BC9B7BA8"},
-                    {position = 0.51, color = "#BC9B7B8B"},
-                    {position = 0.61, color = "#BC9B7B6E"},
-                    {position = 0.70, color = "#BC9B7B51"},
-                    {position = 0.78, color = "#BC9B7B34"},
-                    {position = 0.85, color = "#BC9B7B17"},
-                    {position = 1.00, color = "#BC9B7B00"},
-                }
-            },
+            gradient = gui.Gradient(gradient),
+        },
+
+        gui.Panel{ -- Hover Overlay
+            classes = {"action-button-hover"},
+            width = "50%",
+            height = 43,
+            halign = "center",
+            valign = "bottom",
+            bgimage = "panels/square.png",
+            interactable = false,
+
+            _setSelected = function(element, selected)
+                selected = selected or false
+                element:SetClass("collapsed", selected)
+            end,
         },
 
         gui.Panel{ -- Available Overlay
@@ -173,8 +199,8 @@ local function _actionButton(options)
             end,
 
             gui.Panel{ -- Diamond
-                width = 14,
-                height = 14,
+                width = 12,
+                height = 12,
                 rotate = 45,
                 valign = "top",
                 halign = "center",
@@ -189,7 +215,7 @@ local function _actionButton(options)
                 width = "auto",
                 halign = "center",
                 valign = "top",
-                vmargin = 12,
+                vmargin = 10,
                 pad = 0,
                 flow = "horizontal",
                 interactable = false,

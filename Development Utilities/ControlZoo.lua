@@ -105,6 +105,7 @@ LaunchablePanel.Register {
                             selected = false,
                         },
                         gui.Check{
+                            tmargin = 6,
                             text = "Selected",
                             value = false,
                             placement = "left",
