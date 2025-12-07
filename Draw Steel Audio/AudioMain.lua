@@ -759,7 +759,7 @@ audio.SoundEvent{
 
 
 audio.SoundEvent{
-    name = "Obj.Trap_Trigger_Sycthe",
+    name = "Obj.Trap_Trigger_Scythe",
     mixgroup = "gameplay",
     sounds = {"obj/OBJ_Trap_Trigger_Scythe_01.wav"},
     volume = 0.4,
@@ -774,6 +774,22 @@ audio.SoundEvent{
     ignoreDuplicates = 1,
 }
 
+audio.SoundEvent{
+    name = "Obj.Trap_Trigger_Generic",
+    mixgroup = "gameplay",
+    sounds = {"obj/OBJ_Trap_Trigger_Generic_v1_01.wav"},
+    volume = 0.2,
+    ignoreDuplicates = 1,
+}
+
+
+audio.SoundEvent{
+    name = "Obj.Trap_Trigger_Snare",
+    mixgroup = "gameplay",
+    sounds = {"obj/OBJ_Trap_Trigger_Snare_v1_01.wav"},
+    volume = 0.2,
+    ignoreDuplicates = 1,
+}
 
 
 
