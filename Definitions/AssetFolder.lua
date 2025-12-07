@@ -1,0 +1,2 @@
+--- @class AssetFolder:GameAsset 
+AssetFolder = {}

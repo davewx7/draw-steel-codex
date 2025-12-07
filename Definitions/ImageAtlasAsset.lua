@@ -1,0 +1,2 @@
+--- @class ImageAtlasAsset:ImageAsset 
+ImageAtlasAsset = {}

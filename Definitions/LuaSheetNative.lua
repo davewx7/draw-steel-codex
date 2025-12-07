@@ -1,0 +1,2 @@
+--- @class LuaSheetNative:Panel 
+LuaSheetNative = {}

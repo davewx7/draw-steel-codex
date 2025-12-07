@@ -1,0 +1,2 @@
+--- @class LuaObjectComponentAura:LuaObjectComponent 
+LuaObjectComponentAura = {}

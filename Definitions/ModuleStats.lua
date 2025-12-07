@@ -1,0 +1,2 @@
+--- @class ModuleStats 
+ModuleStats = {}

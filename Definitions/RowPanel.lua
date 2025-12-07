@@ -1,0 +1,2 @@
+--- @class RowPanel:Panel 
+RowPanel = {}

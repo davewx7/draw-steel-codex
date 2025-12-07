@@ -1,0 +1,2 @@
+--- @class ConnectionErrorStatus 
+ConnectionErrorStatus = {}

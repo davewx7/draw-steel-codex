@@ -1,0 +1,2 @@
+--- @class EffectsBrushSynthesisOptionsLua 
+EffectsBrushSynthesisOptionsLua = {}

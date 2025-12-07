@@ -1,0 +1,2 @@
+--- @class WeatherEffectAsset:ImageAsset 
+WeatherEffectAsset = {}

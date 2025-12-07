@@ -1,0 +1,2 @@
+--- @class ErrorEntry 
+ErrorEntry = {}

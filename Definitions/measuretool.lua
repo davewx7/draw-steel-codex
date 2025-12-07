@@ -1,0 +1,2 @@
+--- @class measuretool 
+measuretool = {}

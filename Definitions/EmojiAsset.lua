@@ -1,0 +1,2 @@
+--- @class EmojiAsset:ImageAsset 
+EmojiAsset = {}

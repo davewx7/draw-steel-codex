@@ -1,0 +1,2 @@
+--- @class LuaMarkdownStyle 
+LuaMarkdownStyle = {}

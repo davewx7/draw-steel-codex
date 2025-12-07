@@ -1,0 +1,2 @@
+--- @class LuaObjectComponentInteractive:LuaObjectComponent 
+LuaObjectComponentInteractive = {}

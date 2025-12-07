@@ -1,0 +1,11 @@
+--- @class LuaGameSession 
+--- @field version nil|string (Read-only) the version of the engine the user is using.
+--- @field perf {min: number, max: number, mean: number, median: number, screenWidth: number, screenHeight: number, meanCPU: number, meanGPU: number} Performance information from the user.
+--- @field loggedOut boolean 
+--- @field displayName string 
+--- @field displayColor color 
+--- @field richStatus nil|string 
+--- @field timeSinceLastContact number 
+--- @field dm boolean 
+--- @field primaryCharacter string 
+LuaGameSession = {}

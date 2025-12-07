@@ -1,0 +1,13 @@
+--- @class LuaCharacterAppearance 
+--- @field portraitId string 
+--- @field portraitFrameId string 
+--- @field portraitRibbon string 
+--- @field anthem string 
+--- @field portraitRect any 
+--- @field tokenZoom any 
+--- @field tokenOffset any 
+--- @field frameHueShift any 
+--- @field frameSaturation any 
+--- @field frameBrightness any 
+--- @field characterName any 
+LuaCharacterAppearance = {}

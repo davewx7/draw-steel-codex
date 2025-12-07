@@ -1,0 +1,2 @@
+--- @class PDFBookmark 
+PDFBookmark = {}

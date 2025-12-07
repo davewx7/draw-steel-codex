@@ -1,0 +1,11 @@
+--- @class LuaDicePreviewScene 
+--- @field assetid string 
+--- @field selectedIndex number 
+--- @field dragging boolean 
+--- @field fixedTime boolean 
+--- @field solo boolean 
+--- @field initialRotation number 
+--- @field diceScale number 
+--- @field bgcolor string 
+--- @field bgtexture string 
+LuaDicePreviewScene = {}
