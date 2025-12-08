@@ -2,6 +2,7 @@
     Selectors - managing the left side of the builder
 ]]
 
+local _fireControllerEvent = CharacterBuilder._fireControllerEvent
 local _getController = CharacterBuilder._getController
 local _getCreature = CharacterBuilder._getCreature
 local _getData = CharacterBuilder._getData
@@ -27,10 +28,9 @@ function CharacterBuilder._createDetailedSelectorPanel(config)
             create = function(element)
                 element:FireEvent("refreshToken")
             end,
-            refreshBuilder = function(element, data)
-                if data == nil then data = _getData(element) end
-                if data then
-                    element:FireEvent("setSelected", data[config.selectorName] == element.data.id)
+            refreshBuilderState = function(element, state)
+                if state then
+                    element:FireEvent("setSelected", state:Get(config.selectorName) == element.data.id)
                 end
             end,
             refreshToken = function(element)
@@ -46,13 +46,10 @@ function CharacterBuilder._createDetailedSelectorPanel(config)
                 end
             end,
             click = function(element)
-                local controller = _getController(element)
-                if controller then
-                    controller:FireEvent("selectorDetailChange", {
-                        selector = config.selectorName,
-                        value = element.data.id
-                    })
-                end
+                _fireControllerEvent(element, "updateState", {
+                    key = config.selectorName .. ".selectedId",
+                    value = element.data.id
+                })
             end,
         }
     end
@@ -65,11 +62,8 @@ function CharacterBuilder._createDetailedSelectorPanel(config)
         halign = "right",
         flow = "vertical",
         data = { selector = config.selectorName },
-        refreshBuilder = function(element, data)
-            if data == nil then data = _getData(element) end
-            if data then
-                element:SetClass("collapsed", data.currentSelector ~= element.data.selector)
-            end
+        refreshBuilderState = function(element, state)
+            element:SetClass("collapsed", state:Get("activeSelector") ~= element.data.selector)
         end,
         children = buttons,
     }
@@ -142,16 +136,13 @@ function CharacterBuilder._selectorsPanel()
         vscroll = true,
         borderColor = "blue",
         data = {
-            currentSelector = "",
+            activeSelector = "",
         },
 
         selectorClick = function(element, selector)
-            if element.data.currentSelector ~= selector then
-                element.data.currentSelector = selector
-                local controller = _getController(element)
-                if controller then
-                    controller:FireEvent("selectorChange", selector)
-                end
+            if element.data.activeSelector ~= selector then
+                element.data.activeSelector = selector
+                _fireControllerEvent(element, "selectorChange", selector)
             end
         end,
 
@@ -176,12 +167,9 @@ function CharacterBuilder._makeSelectorButton(options)
             end
         end
     end
-    if options.refreshBuilder == nil then
-        options.refreshBuilder = function(element, data)
-            if data == nil then data = _getData(element) end
-            if data then
-                element:FireEvent("setSelected", data.currentSelector == element.data.selector)
-            end
+    if options.refreshBuilderState == nil then
+        options.refreshBuilderState = function(element, state)
+            element:FireEvent("setSelected", state:Get("activeSelector") == element.data.selector)
         end
     end
     return gui.ActionButton(options)
@@ -194,15 +182,12 @@ function CharacterBuilder._createDetailedSelector(config)
     local selectorButton = CharacterBuilder._makeSelectorButton{
         text = config.text,
         data = { selector = config.selectorName },
-        refreshBuilder = function(element, data)
-            if data == nil then data = _getData(element) end
-            if data then
-                local selfSelected = data.currentSelector == element.data.selector
-                local parentPane = element:FindParentWithClass(config.selectorName .. "-selector")
-                if parentPane then
-                    element:FireEvent("setSelected", selfSelected)
-                    parentPane:FireEvent("showDetail", selfSelected)
-                end
+        refreshBuilderState = function(element, state)
+            local selfSelected = state:Get("activeSelector") == element.data.selector
+            local parentPane = element:FindParentWithClass(config.selectorName .. "-selector")
+            if parentPane then
+                element:FireEvent("setSelected", selfSelected)
+                parentPane:FireEvent("showDetail", selfSelected)
             end
         end,
     }

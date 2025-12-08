@@ -5,6 +5,7 @@
 local SELECTOR = "ancestry"
 local INITIAL_CATEGORY = "overview"
 
+local _fireControllerEvent = CharacterBuilder._fireControllerEvent
 local _getController = CharacterBuilder._getController
 local _getCreature = CharacterBuilder._getCreature
 local _getData = CharacterBuilder._getData
@@ -31,10 +32,9 @@ function CharacterBuilder._ancestryDetail()
                 element:FireEvent("setSelected", newCategory == element.data.category)
             end
         end
-        if options.refreshBuilder == nil then
-            options.refreshBuilder = function(element, data)
-                if not data or type(data) ~= "table" then data = _getData(element) end
-                element:FireEvent("setAvailable", data and data.ancestry ~= nil)
+        if options.refreshBuilderState == nil then
+            options.refreshBuilderState = function(element, state)
+                element:FireEvent("setAvailable", state:Get("ancestry.selectedId") ~= nil)
             end
         end
         return gui.SelectorButton(options)
@@ -77,7 +77,7 @@ function CharacterBuilder._ancestryDetail()
             end
         end,
         categoryChange = function() end,
-        refreshBuilder = function(element)
+        refreshBuilderState = function(element)
             element:FireEvent("refreshToken")
         end,
     }
@@ -104,7 +104,7 @@ function CharacterBuilder._ancestryDetail()
             element.data.catgory = newCategory
         end,
 
-        refreshBuilder = function(element)
+        refreshBuilderState = function(element)
             dmhub.Schedule(0.1, function()
                 element:FireEventTree("categoryChange", element.data.category)
             end)
@@ -134,18 +134,16 @@ function CharacterBuilder._ancestryDetail()
             element:SetClass("collapsed", currentCategory ~= element.data.category)
         end,
 
-        refreshBuilder = function(element, data)
-            if not data then data = _getData(element) end
-            if data then
-                if data.ancestry == nil then
-                    -- element.bgcolor = "#667788"
-                    -- element.bgimage = true
-                    return
-                end
-                local race = dmhub.GetTable(Race.tableName)[data.ancestry]
-                print("THC:: RACE::", json(race))
-                element.bgimage = race.portraitid
+        refreshBuilderState = function(element, state)
+            element:FireEvent("categoryChange", element.data.category)
+            local ancestryId = state:Get("ancestry.selectedId")
+            if ancestryId == nil then
+                -- element.bgcolor = "#667788"
+                -- element.bgimage = true
+                return
             end
+            local race = dmhub.GetTable(Race.tableName)[ancestryId]
+            element.bgimage = race.portraitid
         end,
 
         gui.Panel{
@@ -157,7 +155,7 @@ function CharacterBuilder._ancestryDetail()
             bgimage = true,
             vpad = 8,
             gui.Label{
-                classes = {"label-header", "label-info", "label", "builder-base"},
+                classes = {"builder-base", "label", "label-info", "label-header"},
                 width = "100%",
                 height = "auto",
                 hpad = 12,
@@ -165,16 +163,16 @@ function CharacterBuilder._ancestryDetail()
                 bgcolor = "#333333cc",
                 text = "ANCESTRY",
                 textAlignment = "left",
-                refreshBuilder = function(element, data)
-                    if data == nil then data = _getData(element) end
-                    if data and data.ancestry then
-                        local race = dmhub.GetTable(Race.tableName)[data.ancestry]
+                refreshBuilderState = function(element, state)
+                    local ancestryId = state:Get("ancestry.selectedId")
+                    if ancestryId then
+                        local race = dmhub.GetTable(Race.tableName)[ancestryId]
                         element.text = race.name
                     end
                 end
             },
             gui.Label{
-                classes = {"label-info", "label", "builder-base"},
+                classes = {"builder-base", "label", "label-info"},
                 width = "100%",
                 height = "auto",
                 hpad = 12,
@@ -187,7 +185,7 @@ function CharacterBuilder._ancestryDetail()
                 text = CharacterBuilder.STRINGS.ANCESTRY.INTRO,
             },
             gui.Label{
-                classes = {"label-info", "label", "builder-base"},
+                classes = {"builder-base", "label", "label-info"},
                 width = "100%",
                 height = "auto",
                 hpad = 12,
@@ -204,7 +202,7 @@ function CharacterBuilder._ancestryDetail()
 
     local ancestryDetailPanel = gui.Panel{
         id = "ancestryDetailPanel",
-        classes = {"ancestryDetailpanel", "panel-base", "builder-base"},
+        classes = {"builder-base", "panel-base", "ancestryDetailpanel"},
         width = 660,
         height = "99%",
         valign = "center",
@@ -216,7 +214,7 @@ function CharacterBuilder._ancestryDetail()
 
     ancestryPanel = gui.Panel{
         id = "ancestryPanel",
-        classes = {"ancestryPanel", "panel-base", "builder-base"},
+        classes = {"builder-base", "panel-base", "ancestryPanel"},
         width = "100%",
         height = "100%",
         flow = "horizontal",
@@ -227,12 +225,9 @@ function CharacterBuilder._ancestryDetail()
             selector = "ancestry",
         },
 
-        refreshBuilder = function(element, data)
-            if data == nil then data = _getData(element) end
-            if data then
-                local visible = data.currentSelector == element.data.selector
-                element:SetClass("collapsed", not visible)
-            end
+        refreshBuilderState = function(element, state)
+            local visible = state:Get("activeSelector") == element.data.selector
+            element:SetClass("collapsed", not visible)
         end,
 
         categoryNavPanel,

@@ -3,6 +3,7 @@
     ... plus some other WIP that will eventually move out
 ]]
 
+local _fireControllerEvent = CharacterBuilder._fireControllerEvent
 local _getController = CharacterBuilder._getController
 local _getCreature = CharacterBuilder._getCreature
 local _getToken = CharacterBuilder._getToken
@@ -95,6 +96,7 @@ function CharacterBuilder._characterPanel(builderPanel)
             element:FireEvent("imageLoaded")
             element:FireEvent("updatePopout", info.token.popoutPortrait)
         end,
+
         change = function(element)
             -- local info = CharacterSheet.instance.data.info
             -- info.token.portrait = element.value
@@ -129,8 +131,7 @@ function CharacterBuilder._characterPanel(builderPanel)
                 local t = _getToken(element)
                 if t then
                     t.name = element.data.text
-                    local controller = _getController(element)
-                    if controller then controller:FireEvent("tokenDataChanged") end
+                    _fireControllerEvent(element, "tokenDataChanged")
                 end
             end
         end,
@@ -138,7 +139,7 @@ function CharacterBuilder._characterPanel(builderPanel)
 
     characterPanel = gui.Panel{
         id = "characterPanel",
-        classes = {"characterPanel", "bordered", "panel-base", "builder-base"},
+        classes = {"builder-base", "panel-base", "bordered", "characterPanel"},
         width = CharacterBuilder.SIZES.CHARACTER_PANEL_WIDTH,
         height = "99%",
         valign = "center",
@@ -168,7 +169,7 @@ function CharacterBuilder.CreatePanel()
     builderPanel = gui.Panel{
         id = CharacterBuilder.CONTROLLER_CLASS,
         styles = CharacterBuilder._getStyles(),
-        classes = {CharacterBuilder.CONTROLLER_CLASS, "panel-base", "builder-base"},
+        classes = {CharacterBuilder.CONTROLLER_CLASS, "builder-base", "panel-base"},
         width = "99%",
         height = "99%",
         halign = "center",
@@ -177,6 +178,8 @@ function CharacterBuilder.CreatePanel()
         borderColor = "red",
 
         data = {
+            state = CharacterBuilderState:new(),
+
             detailPanels = {},
 
             selectorData = {},
@@ -215,8 +218,8 @@ function CharacterBuilder.CreatePanel()
                 element.data._cacheToken(element)
             end
             if element.data.token then
-                element.data.selectorData.ancestry = element.data.token.properties:try_get("raceid")
-                element:FireEventTree("refreshBuilder", element.data.selectorData)
+                element.data.state:Set("ancestry.selectedId", element.data.token.properties:try_get("raceid"))
+                element:FireEventTree("refreshBuilderState", element.data.state)
             end
         end,
 
@@ -230,22 +233,22 @@ function CharacterBuilder.CreatePanel()
                     detailPanel:AddChild(selectorDetail)
                 end
             end
-            element.data.selectorData.currentSelector = newSelector
-            element:FireEventTree("refreshBuilder", element.data.selectorData)
-            -- detailPanel:FireEventTree("selectorChange", newSelector)
+            element.data.state:Set("activeSelector", newSelector)
+            element:FireEventTree("refreshBuilderState", element.data.state)
         end,
 
-        selectorDetailChange = function(element, info)
-            if info and type(info) == "table" then
-                element.data.selectorData[info.selector] = info.value
-                element:FireEventTree("refreshBuilder", element.data.selectorData)
+        updateState = function(element, info)
+            if info then
+                element.data.state:Set(info.key, info.value)
             end
+            element:FireEventTree("refreshBuilderState", element.data.state)
         end,
 
         tokenDataChanged = function(element)
             if element.data.charSheetInstance then
                 element.data.charSheetInstance:FireEvent("refreshAll")
             else
+                element:FireEvent("refreshBuilderState", element.data.state)
                 element:FireEvent("refreshBuilder", element.data.selectorData)
             end
         end,

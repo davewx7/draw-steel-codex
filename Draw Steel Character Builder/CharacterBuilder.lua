@@ -35,6 +35,15 @@ end
     Utilities
 ]]
 
+--- Fires an event on the main builder panel
+--- @param element Panel The element calling this method
+--- @param eventName string
+--- @param info any|nil
+function CharacterBuilder._fireControllerEvent(element, eventName, info)
+    local controller = CharacterBuilder._getController(element)
+    if controller then controller:FireEvent(eventName, info) end
+end
+
 --- Returns the character sheet instance if we're operating inside it
 --- @return CharacterSheet|nil
 function CharacterBuilder._getCharacterSheet(element)
@@ -60,6 +69,14 @@ end
 function CharacterBuilder._getData(element)
     local controller = CharacterBuilder._getController(element)
     if controller then return controller.data.selectorData end
+    return nil
+end
+
+--- Returns the builder state
+--- @return @CharacterBuilderState|nil
+function CharacterBuilder._getState(element)
+    local controller = CharacterBuilder._getController(element)
+    if controller then return controller.data.state end
     return nil
 end
 
