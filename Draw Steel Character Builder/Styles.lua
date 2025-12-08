@@ -1,22 +1,31 @@
 --- Styles for Character Builder
 
+--- Set this to true to draw layout helper borders around panels that have none
 local DEBUG_PANEL_BG = false
 
 CharacterBuilder.COLORS = {
     BLACK = "#000000",
+    BLACK03 = "#191A18",
     CREAM = "#BC9B7B",
     GOLD = "#966D4B",
-    GRAY2 = "#666663",
+    GRAY02 = "#666663",
     PANEL_BG = "#080B09",
 }
 
 CharacterBuilder.SIZES = {
+    CHARACTER_PANEL_WIDTH = 447,
+
     ACTION_BUTTON_WIDTH = 225,
     ACTION_BUTTON_HEIGHT = 45,
+
+    SELECTOR_BUTTON_WIDTH = 200,
+    SELECTOR_BUTTON_HEIGHT = 48,
+
+    AVATAR_DIAMETER = 185,
+
     BUTTON_SPACING = 12,
 }
 CharacterBuilder.SIZES.BUTTON_PANEL_WIDTH = CharacterBuilder.SIZES.ACTION_BUTTON_WIDTH + 60
-CharacterBuilder.SIZES.CHARACTER_PANEL_WIDTH = math.floor(1.4 * CharacterBuilder.SIZES.BUTTON_PANEL_WIDTH)
 CharacterBuilder.SIZES.CENTER_PANEL_WIDTH = "100%-" .. (30 + CharacterBuilder.SIZES.BUTTON_PANEL_WIDTH + CharacterBuilder.SIZES.CHARACTER_PANEL_WIDTH)
 
 --[[
@@ -74,6 +83,19 @@ function CharacterBuilder._labelStyles()
             color = Styles.textColor,
             bold = false,
         },
+        {
+            selectors = {"label-info", "label", "bulder-base"},
+            hpad = 12,
+            fontSize = 18,
+            textAlignment = "left",
+            bgimage = true,
+            bgcolor = "#333333cc",
+        },
+        {
+            selectors = {"label-header", "label-info", "label", "builder-base"},
+            fontSize = 40,
+            bold = true,
+        },
     }
 end
 
@@ -102,8 +124,8 @@ function CharacterBuilder._buttonStyles()
         },
         {
             selectors = {"unavailable", "button", "builder-base"},
-            borderColor = CharacterBuilder.COLORS.GRAY2,
-            color = CharacterBuilder.COLORS.GRAY2,
+            borderColor = CharacterBuilder.COLORS.GRAY02,
+            color = CharacterBuilder.COLORS.GRAY02,
         }
     }
 end

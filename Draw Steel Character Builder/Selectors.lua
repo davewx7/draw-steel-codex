@@ -2,29 +2,57 @@
     Selectors - managing the left side of the builder
 ]]
 
+local _getController = CharacterBuilder._getController
+local _getCreature = CharacterBuilder._getCreature
+local _getData = CharacterBuilder._getData
+local _getToken = CharacterBuilder._getToken
+
+--- Creates a panel of selectable item buttons that expands when its selector is active.
+--- Items must have `id` and `name` fields.
+--- @param config {items: table[], selectorName: string, getSelected: fun(creature): table|nil}
+--- @return Panel
 function CharacterBuilder._createDetailedSelectorPanel(config)
     local selectorPanel
     local buttons = {}
 
     for _,item in ipairs(config.items) do
         buttons[#buttons+1] = gui.SelectorButton{
+            width = CharacterBuilder.SIZES.SELECTOR_BUTTON_WIDTH,
+            height = CharacterBuilder.SIZES.SELECTOR_BUTTON_HEIGHT,
             valign = "top",
             tmargin = CharacterBuilder.SIZES.BUTTON_SPACING,
             text = item.name,
             data = { id = item.id },
             available = true,
             create = function(element)
-                if CharacterBuilder._inCharSheet(element) then
-                    local creature = CharacterSheet.instance.data.info.token.properties
+                element:FireEvent("refreshToken")
+            end,
+            refreshBuilder = function(element, data)
+                if data == nil then data = _getData(element) end
+                if data then
+                    element:FireEvent("setSelected", data[config.selectorName] == element.data.id)
+                end
+            end,
+            refreshToken = function(element)
+                local creature = _getCreature(element)
+                if creature then
                     local selected = config.getSelected(creature)
-                    if selected then
-                        element:FireEvent("setSelected", selected.id == element.data.id)
+                    element:FireEvent("setAvailable", not selected or selected == element.data.id)
+                    element:FireEvent("setSelected", selected == element.data.id)
+                    element:SetClass("collapsed", selected and selected ~= element.data.id)
+                    if selected and selected == element.data.id then
+                        element:FireEvent("click")
                     end
                 end
             end,
             click = function(element)
-                print("THC:: VALUES::", json(element.value))
-                print("THC:: " .. string.upper(config.selectorName) .. ":: CLICK::", element.data.id, element.value or "nope")
+                local controller = _getController(element)
+                if controller then
+                    controller:FireEvent("selectorDetailChange", {
+                        selector = config.selectorName,
+                        value = element.data.id
+                    })
+                end
             end,
         }
     end
@@ -37,10 +65,11 @@ function CharacterBuilder._createDetailedSelectorPanel(config)
         halign = "right",
         flow = "vertical",
         data = { selector = config.selectorName },
-        selectorChange = function(element, selector)
-            print(string.format("THC:: SELPANEL:: %s:: %s SELCHANGE:: %s",
-                string.upper(config.selectorName), element.data.selector, selector))
-            element:SetClass("collapsed", selector ~= element.data.selector)
+        refreshBuilder = function(element, data)
+            if data == nil then data = _getData(element) end
+            if data then
+                element:SetClass("collapsed", data.currentSelector ~= element.data.selector)
+            end
         end,
         children = buttons,
     }
@@ -48,42 +77,54 @@ function CharacterBuilder._createDetailedSelectorPanel(config)
     return selectorPanel
 end
 
+--- @return Panel Ancestry selector panel
 function CharacterBuilder._ancestrySelectorPanel()
     return CharacterBuilder._createDetailedSelectorPanel{
-        items = CharacterBuilder._sortItemsByName(CharacterBuilder._toArray(dmhub.GetTableVisible(Race.tableName))),
+        items = CharacterBuilder._sortArrayByProperty(CharacterBuilder._toArray(dmhub.GetTableVisible(Race.tableName)), "name"),
         selectorName = "ancestry",
-        getSelected = function(creature) return creature:Race() end,
+        getSelected = function(creature) return creature:try_get("raceid") end,
     }
 end
 
+--- @return Panel Career selector panel
 function CharacterBuilder._careerSelectorPanel()
     return CharacterBuilder._createDetailedSelectorPanel{
-        items = CharacterBuilder._sortItemsByName(CharacterBuilder._toArray(dmhub.GetTableVisible(Background.tableName))),
+        items = CharacterBuilder._sortArrayByProperty(CharacterBuilder._toArray(dmhub.GetTableVisible(Background.tableName)), "name"),
         selectorName = "career",
-        getSelected = function(creature) return creature:Background() end,
+        getSelected = function(creature)
+            local bg = creature:Background()
+            return bg and bg.id or nil
+        end,
     }
 end
 
+--- @return Panel Class selector panel
 function CharacterBuilder._classSelectorPanel()
     return CharacterBuilder._createDetailedSelectorPanel{
-        items = CharacterBuilder._sortItemsByName(CharacterBuilder._toArray(dmhub.GetTableVisible(Class.tableName))),
+        items = CharacterBuilder._sortArrayByProperty(CharacterBuilder._toArray(dmhub.GetTableVisible(Class.tableName)), "name"),
         selectorName = "class",
-        getSelected = function(creature) return creature:GetClass() end,
+        getSelected = function(creature)
+            local c = creature:GetClass()
+            return c and c.id or nil
+        end,
     }
 end
 
+--- @return Panel Culture category selector panel
 function CharacterBuilder._cultureSelectorPanel()
     local cultureCats = dmhub.DeepCopy(CultureAspect.categories)
     for _,item in ipairs(cultureCats) do
         item.name = item.text
     end
     return CharacterBuilder._createDetailedSelectorPanel{
-        items = CharacterBuilder._sortItemsByName(cultureCats),
+        items = CharacterBuilder._sortArrayByProperty(cultureCats, "name"),
         selectorName = "culture",
         getSelected = function(creature) return nil end,
     }
 end
 
+--- Creates the main selectors panel containing all registered selectors.
+--- @return Panel
 function CharacterBuilder._selectorsPanel()
 
     local selectors = {}
@@ -106,11 +147,11 @@ function CharacterBuilder._selectorsPanel()
 
         selectorClick = function(element, selector)
             if element.data.currentSelector ~= selector then
-                local builderPanel = element:FindParentWithClass("builderPanel")
-                if builderPanel then
-                    builderPanel:FireEventTree("selectorChange", selector)
-                end
                 element.data.currentSelector = selector
+                local controller = _getController(element)
+                if controller then
+                    controller:FireEvent("selectorChange", selector)
+                end
             end
         end,
 
@@ -120,6 +161,9 @@ function CharacterBuilder._selectorsPanel()
     return selectorsPanel
 end
 
+--- Factory for selector buttons with default event handlers.
+--- @param options table Button options; must include `data.selector`
+--- @return ActionButton
 function CharacterBuilder._makeSelectorButton(options)
     options.valign = "top"
     options.tmargin = CharacterBuilder.SIZES.BUTTON_SPACING
@@ -132,24 +176,33 @@ function CharacterBuilder._makeSelectorButton(options)
             end
         end
     end
-    if options.selectorChange == nil then
-        options.selectorChange = function(element, selector)
-            element:FireEvent("setSelected", selector == element.data.selector)
+    if options.refreshBuilder == nil then
+        options.refreshBuilder = function(element, data)
+            if data == nil then data = _getData(element) end
+            if data then
+                element:FireEvent("setSelected", data.currentSelector == element.data.selector)
+            end
         end
     end
     return gui.ActionButton(options)
 end
 
+--- Creates a selector button that lazily loads a detail panel when selected.
+--- @param config {text: string, selectorName: string, createChoicesPane: fun(): Panel}
+--- @return Panel
 function CharacterBuilder._createDetailedSelector(config)
     local selectorButton = CharacterBuilder._makeSelectorButton{
         text = config.text,
         data = { selector = config.selectorName },
-        selectorChange = function(element, selector)
-            local selfSelected = selector == element.data.selector
-            local parentPane = element:FindParentWithClass(config.selectorName .. "-selector")
-            if parentPane then
-                element:FireEvent("setSelected", selfSelected)
-                parentPane:FireEvent("showDetail", selfSelected)
+        refreshBuilder = function(element, data)
+            if data == nil then data = _getData(element) end
+            if data then
+                local selfSelected = data.currentSelector == element.data.selector
+                local parentPane = element:FindParentWithClass(config.selectorName .. "-selector")
+                if parentPane then
+                    element:FireEvent("setSelected", selfSelected)
+                    parentPane:FireEvent("showDetail", selfSelected)
+                end
             end
         end,
     }
@@ -161,17 +214,17 @@ function CharacterBuilder._createDetailedSelector(config)
         pad = 0,
         margin = 0,
         flow = "vertical",
-        data = { detailPane = nil },
+        data = { choicesPane = nil },
 
         showDetail = function(element, show)
             if show then
-                if not element.data.detailPane then
-                    element.data.detailPane = config.createDetailPanel()
-                    element:AddChild(element.data.detailPane)
+                if not element.data.choicesPane then
+                    element.data.choicesPane = config.createChoicesPane()
+                    element:AddChild(element.data.choicesPane)
                 end
             end
-            if element.data.detailPane then
-                element.data.detailPane:SetClass("collapsed", not show)
+            if element.data.choicesPane then
+                element.data.choicesPane:SetClass("collapsed", not show)
             end
         end,
 
@@ -183,6 +236,7 @@ function CharacterBuilder._createDetailedSelector(config)
     return selector
 end
 
+--- @return ActionButton Back button (hidden when in CharSheet)
 function CharacterBuilder._backSelector()
     return CharacterBuilder._makeSelectorButton{
         text = "BACK",
@@ -196,6 +250,7 @@ function CharacterBuilder._backSelector()
     }
 end
 
+--- @return ActionButton Character selector button
 function CharacterBuilder._characterSelector()
     return CharacterBuilder._makeSelectorButton{
         text = "Character",
@@ -203,45 +258,55 @@ function CharacterBuilder._characterSelector()
     }
 end
 
+--- @return Panel Ancestry selector with detail panel
 function CharacterBuilder._ancestrySelector()
     return CharacterBuilder._createDetailedSelector{
         text = "Ancestry",
         selectorName = "ancestry",
-        createDetailPanel = CharacterBuilder._ancestrySelectorPanel,
+        createChoicesPane = CharacterBuilder._ancestrySelectorPanel,
     }
 end
 
+--- @return Panel Culture selector with detail panel
 function CharacterBuilder._cultureSelector()
     return CharacterBuilder._createDetailedSelector{
         text = "Culture",
         selectorName = "culture",
-        createDetailPanel = CharacterBuilder._cultureSelectorPanel,
+        createChoicesPane = CharacterBuilder._cultureSelectorPanel,
     }
 end
 
+--- @return Panel Career selector with detail panel
 function CharacterBuilder._careerSelector()
     return CharacterBuilder._createDetailedSelector{
         text = "Career",
         selectorName = "career",
-        createDetailPanel = CharacterBuilder._careerSelectorPanel,
+        createChoicesPane = CharacterBuilder._careerSelectorPanel,
     }
 end
 
+--- @return Panel Class selector with detail panel
 function CharacterBuilder._classSelector()
     return CharacterBuilder._createDetailedSelector{
         text = "Class",
         selectorName = "class",
-        createDetailPanel = CharacterBuilder._classSelectorPanel,
+        createChoicesPane = CharacterBuilder._classSelectorPanel,
     }
 end
 
+--- @return ActionButton Kit selector button
 function CharacterBuilder._kitSelector()
     return CharacterBuilder._makeSelectorButton{
         text = "Kit",
         data = { selector = "kit" },
+        refreshToken = function(element)
+            local c = _getCreature(element)
+            element:SetClass("collapsed", not c or not c:IsHero() or not c:CanHaveKits() )
+        end,
     }
 end
 
+--- @return ActionButton Complication selector button
 function CharacterBuilder._complicationSelector()
     return CharacterBuilder._makeSelectorButton{
         text = "Complication",
@@ -264,7 +329,8 @@ CharacterBuilder.RegisterSelector{
 CharacterBuilder.RegisterSelector{
     id = "ancestry",
     ord = 3,
-    selector = CharacterBuilder._ancestrySelector
+    selector = CharacterBuilder._ancestrySelector,
+    detail = CharacterBuilder._ancestryDetail,
 }
 
 CharacterBuilder.RegisterSelector{

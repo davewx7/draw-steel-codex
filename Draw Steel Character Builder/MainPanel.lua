@@ -3,152 +3,13 @@
     ... plus some other WIP that will eventually move out
 ]]
 
---- Placeholder for content in a center panel
-function CharacterBuilder._ancestryPanel(detailPanel)
-    local ancestryPanel
-
-    local function makeCategoryButton(options)
-        options.valign = "top"
-        options.bmargin = 16
-        options.width = CharacterBuilder.SIZES.ACTION_BUTTON_WIDTH
-        return gui.SelectorButton(options)
-    end
-
-    local overview = makeCategoryButton{
-        text = "Overview",
-        data = { selector = "overview" },
-        click = function(element)
-        end,
-    }
-    local lore = makeCategoryButton{
-        text = "Lore",
-        data = { selector = "lore" },
-        click = function(element)
-        end,
-    }
-    local features = makeCategoryButton{
-        text = "Features",
-        data = { selector = "features" },
-        click = function(element)
-        end,
-    }
-    local traits = makeCategoryButton{
-        text = "Traits",
-        data = { selector = "traits" },
-        click = function(element)
-        end,
-    }
-    local change = makeCategoryButton{
-        text = "Change Ancestry",
-        data = { selector = "change" },
-        click = function(element)
-        end,
-    }
-
-    local selectorsPanel = gui.Panel{
-        classes = {"selectorsPanel", "panel-base", "builder-base"},
-        width = CharacterBuilder.SIZES.BUTTON_PANEL_WIDTH,
-        height = "99%",
-        valign = "top",
-        vpad = CharacterBuilder.SIZES.ACTION_BUTTON_HEIGHT,
-        flow = "vertical",
-        vscroll = true,
-        borderColor = "teal",
-        data = {
-            openPanel = "",
-        },
-
-        selectorClick = function(element, selector)
-            if element.data.openPanel ~= selector then
-                element.data.openPanel = selector
-                ancestryPanel.FireEvent("selectorChange", selector)
-            end
-        end,
-
-        overview,
-        lore,
-        features,
-        traits,
-        change,
-    }
-
-    local ancestryOverviewPanel = gui.Panel{
-        id = "ancestryOverviewPanel",
-        classes = {"ancestryOverviewPanel", "bordered", "panel-base", "builder-base"},
-        width = "96%",
-        height = "99%",
-        valign = "center",
-        halign = "center",
-        bgcolor = "#667788",
-
-        gui.Panel{
-            width = "100%-2",
-            height = "auto",
-            valign = "bottom",
-            vmargin = 32,
-            flow = "vertical",
-            bgimage = true,
-            bgcolor = "#333333cc",
-            vpad = 8,
-            gui.Label{
-                classes = {"builder-base"},
-                width = "100%",
-                height = "auto",
-                hpad = 12,
-                fontSize = 40,
-                text = "ANCESTRY",
-                textAlignment = "left",
-            },
-            gui.Label{
-                classes = {"label", "builder-base"},
-                width = "100%",
-                height = "auto",
-                hpad = 12,
-                bold = false,
-                fontSize = 18,
-                textAlignment = "left",
-                text = CharacterBuilder.STRINGS.ANCESTRY.OVERVIEW,
-            }
-        }
-    }
-
-    local ancestryDetailPanel = gui.Panel{
-        id = "ancestryDetailPanel",
-        classes = {"ancestryDetailpanel", "panel-base", "builder-base"},
-        width = "80%-" .. CharacterBuilder.SIZES.BUTTON_PANEL_WIDTH,
-        height = "99%",
-        valign = "center",
-        halign = "center",
-        borderColor = "teal",
-
-        ancestryOverviewPanel,
-    }
-
-    ancestryPanel = gui.Panel{
-        id = "ancestryPanel",
-        classes = {"ancestryPanel", "panel-base", "builder-base"},
-        width = "100%",
-        height = "100%",
-        flow = "horizontal",
-        valign = "center",
-        halign = "center",
-        borderColor = "yellow",
-
-        selectorChange = function(element, newSelector)
-        end,
-
-        selectorsPanel,
-        ancestryDetailPanel,
-    }
-
-    return ancestryPanel
-end
+local _getController = CharacterBuilder._getController
+local _getCreature = CharacterBuilder._getCreature
+local _getToken = CharacterBuilder._getToken
 
 --- Minimal implementation for the center panel. Non-reactive.
 function CharacterBuilder._detailPanel(builderPanel)
     local detailPanel
-
-    local ancestryPanel = CharacterBuilder._ancestryPanel(detailPanel)
 
     detailPanel = gui.Panel{
         id = "detailPanel",
@@ -157,8 +18,6 @@ function CharacterBuilder._detailPanel(builderPanel)
         height = "99%",
         valign = "center",
         borderColor = "blue",
-
-        ancestryPanel,
     }
 
     return detailPanel
@@ -185,9 +44,9 @@ function CharacterBuilder._characterPanel(builderPanel)
         allowPaste = true,
         borderColor = Styles.textColor,
         borderWidth = 2,
-        cornerRadius = 75,
-        width = 150,
-        height = 150,
+        cornerRadius = math.floor(0.5 * CharacterBuilder.SIZES.AVATAR_DIAMETER),
+        width = CharacterBuilder.SIZES.AVATAR_DIAMETER,
+        height = CharacterBuilder.SIZES.AVATAR_DIAMETER,
         autosizeimage = true,
         halign = "center",
         valign = "top",
@@ -257,19 +116,21 @@ function CharacterBuilder._characterPanel(builderPanel)
         fontSize = 24,
         editable = true,
         data = {
-            inCharSheet = false,
+            text = "",
         },
-        create = function(element)
-            element.data.inCharSheet = CharacterBuilder._inCharSheet(element) and CharacterSheet.instance and CharacterSheet.instance.data and CharacterSheet.instance.data.info and CharacterSheet.instance.data.info.token
-            if element.data.inCharSheet then
-                element.text = CharacterSheet.instance.data.info.token.name or "Unnamed Character"
-            end
+        refreshToken = function(element)
+            local t = _getToken(element)
+            element.data.text = (t and t.name and #t.name > 0) and t.name or "Unnamed Character"
+            element.text = string.upper(element.data.text)
         end,
         change = function(element)
-            if element.data.inCharSheet then
-                if element.text ~= CharacterSheet.instance.data.info.token.name then
-                    CharacterSheet.instance.data.info.token.name = element.text
-                    CharacterSheet.instance:FireEventTree("refreshToken", CharacterSheet.instance.data.info)
+            if element.data.text ~= element.text then
+                element.data.text = element.text
+                local t = _getToken(element)
+                if t then
+                    t.name = element.data.text
+                    local controller = _getController(element)
+                    if controller then controller:FireEvent("tokenDataChanged") end
                 end
             end
         end,
@@ -305,9 +166,9 @@ function CharacterBuilder.CreatePanel()
     local characterPanel = CharacterBuilder._characterPanel(builderPanel)
 
     builderPanel = gui.Panel{
-        id = "builderPanel",
+        id = CharacterBuilder.CONTROLLER_CLASS,
         styles = CharacterBuilder._getStyles(),
-        classes = {"builderPanel", "panel-base", "builder-base"},
+        classes = {CharacterBuilder.CONTROLLER_CLASS, "panel-base", "builder-base"},
         width = "99%",
         height = "99%",
         halign = "center",
@@ -315,7 +176,78 @@ function CharacterBuilder.CreatePanel()
         flow = "horizontal",
         borderColor = "red",
 
+        data = {
+            detailPanels = {},
+
+            selectorData = {},
+
+            cachedCharSheetInstance = false,
+            charSheetInstance = nil,
+            token = nil,
+            _cacheToken = function(element)
+                if element.data.charSheetInstance == nil and not element.data.cachedCharSheetInstance then
+                    element.data.charSheetInstance = CharacterBuilder._getCharacterSheet(element)
+                    element.data.cachedCharSheetInstance = true
+                end
+                if element.data.charSheetInstance and element.data.charSheetInstance.data and element.data.charSheetInstance.data.info then
+                    element.data.token = element.data.charSheetInstance.data.info.token
+                else
+                    -- TODO: Can we create a token without attaching it to the game immediately?
+                end
+                return element.data.token
+            end,
+            GetToken = function(element)
+                if element.data.token ~= nil then return element.data.token end
+                return element.data._cacheToken(element)
+            end,
+        },
+
+        create = function(element)
+            if element.data._cacheToken(element) ~= nil then
+                element:FireEventTree("refreshToken")
+            end
+        end,
+
+        refreshToken = function(element, info)
+            if info then
+                element.data.token = info.token
+            else
+                element.data._cacheToken(element)
+            end
+            if element.data.token then
+                element.data.selectorData.ancestry = element.data.token.properties:try_get("raceid")
+                element:FireEventTree("refreshBuilder", element.data.selectorData)
+            end
+        end,
+
         selectorChange = function(element, newSelector)
+            local selectorDetail = element.data.detailPanels[newSelector]
+            if not selectorDetail then
+                local selector = CharacterBuilder.SelectorLookup[newSelector]
+                if selector and selector.detail then
+                    selectorDetail = selector.detail()
+                    element.data.detailPanels[newSelector] = selectorDetail
+                    detailPanel:AddChild(selectorDetail)
+                end
+            end
+            element.data.selectorData.currentSelector = newSelector
+            element:FireEventTree("refreshBuilder", element.data.selectorData)
+            -- detailPanel:FireEventTree("selectorChange", newSelector)
+        end,
+
+        selectorDetailChange = function(element, info)
+            if info and type(info) == "table" then
+                element.data.selectorData[info.selector] = info.value
+                element:FireEventTree("refreshBuilder", element.data.selectorData)
+            end
+        end,
+
+        tokenDataChanged = function(element)
+            if element.data.charSheetInstance then
+                element.data.charSheetInstance:FireEvent("refreshAll")
+            else
+                element:FireEvent("refreshBuilder", element.data.selectorData)
+            end
         end,
 
         selectorsPanel,
