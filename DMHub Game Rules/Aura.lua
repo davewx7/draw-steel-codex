@@ -717,9 +717,14 @@ end
 
 function AuraInstance:HasExpired()
     if self:has_key("duration") then
+        local initiative = dmhub.initiativeQueue
+        if initiative == nil or initiative.hidden == true then
+            return true
+        end
+
         if self.duration == "eoe" then
-            local initiative = dmhub.initiativeQueue
-            return initiative == nil or initiative.hidden == true 
+            --only expires when encounter is over.
+            return false
         end
 
         if self:has_key("durationRound") then

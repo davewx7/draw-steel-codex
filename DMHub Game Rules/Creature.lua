@@ -5577,6 +5577,7 @@ creature._tmp_triggeredOpportunityAttacks = 0
 
 --called by dmhub when the creature moves.
 function creature:OnMove(path)
+
     local ourToken = dmhub.LookupToken(self)
     if ourToken == nil then
         return
@@ -5594,26 +5595,65 @@ function creature:OnMove(path)
 
     local immuneFromOpportunityAttacks = self:CalculateNamedCustomAttribute("Immunity from Opportunity Attack") > 0
 
+
     local allTokens = dmhub.allTokens
+    local steps = path.steps
+
+    --first we find the bounds of the move. This way we can easily filter tokens that
+    --are nowhere near adjacent to it.
+    local minx, miny, maxx, maxy
+    for _,step in ipairs(steps) do
+        local x = step.x
+        local y = step.y
+        minx = (minx == nil) and x or math.min(minx, x)
+        miny = (miny == nil) and y or math.min(miny, y)
+        maxx = (maxx == nil) and x or math.max(maxx, x)
+        maxy = (maxy == nil) and y or math.max(maxy, y)
+    end
+
+    --filter down allTokens to a list of tokens that we move through the adjacent squares of.
+    local allTokensFiltered = {}
 
     local occupyingLocationMap = {}
     local adjacentLocationMap = {}
     for i,otherToken in ipairs(allTokens) do
         local adj = otherToken.properties:AdjacentLocations()
-        local occupying = otherToken.locsOccupying
-        occupyingLocationMap[i] = occupying
-        for _,loc in ipairs(occupying) do
-            adj[#adj+1] = loc
+
+        local moveNextTo = false
+
+        for _,a in ipairs(adj) do
+            if a.x >= minx and a.x <= maxx and a.y >= miny and a.y <= maxy then
+                for _,step in ipairs(steps) do
+                    if a.x == step.x and a.y == step.y and a.floor == step.floor then
+                        moveNextTo = true
+                        break
+                    end
+                end
+                if moveNextTo then
+                    break
+                end
+            end
         end
 
-        adjacentLocationMap[i] = adj
+
+        if moveNextTo then
+            allTokensFiltered[#allTokensFiltered+1] = otherToken
+            local occupying = otherToken.locsOccupying
+            occupyingLocationMap[#allTokensFiltered] = occupying
+            for _,loc in ipairs(occupying) do
+                adj[#adj+1] = loc
+            end
+
+            adjacentLocationMap[#allTokensFiltered] = adj
+        end
     end
+
+    allTokens = allTokensFiltered
 
     local ourCharid = dmhub.LookupTokenId(self)
 
     local previousAdjacent = {}
 
-    local steps = path.steps
     for i,step in ipairs(steps) do
         local adjacentTokens = {}
         local locs = ourToken:LocsOccupyingWhenAt(step)
@@ -8100,7 +8140,8 @@ end
 
 function creature:DispatchEvent(eventName, info, onCompleteCallback)
 
-    print("DISPATCH:: EVENT =", eventName, "SUBJECT", info ~= nil and info.subject ~= nil)
+    --print("DISPATCH:: EVENT =", eventName, "SUBJECT", info ~= nil and info.subject ~= nil)
+
 
     local triggeredOnOthers = false
     if info == nil or info.subject == nil then
@@ -8117,7 +8158,7 @@ function creature:DispatchEvent(eventName, info, onCompleteCallback)
 		end
 	end
 
-    print("DISPATCH:: HAVE TRIGGER:", hasTrigger)
+    --print("DISPATCH:: HAVE TRIGGER:", hasTrigger)
 
 	if hasTrigger == false then
 		--still remove any ongoing effects.
@@ -8131,7 +8172,7 @@ function creature:DispatchEvent(eventName, info, onCompleteCallback)
 	local token = dmhub.LookupToken(self)
 	local activecontroller = token.activeControllerId
 
-    print("DISPATCH:: active controller =", activecontroller, "from event", eventName, "vs", dmhub.userid)
+    --print("DISPATCH:: active controller =", activecontroller, "from event", eventName, "vs", dmhub.userid)
 
 	--we are the best choice to handle this event.
 	if activecontroller == nil then
@@ -8359,7 +8400,7 @@ end
 
 --- @param triggerInfo ActiveTrigger
 function creature:DispatchAvailableTrigger(triggerInfo)
-    if triggerInfo.clearOnDismiss and triggerInfo.dismissed then
+    if triggerInfo.clearOnDismiss and (triggerInfo.dismissed or (self:get_or_add("_tmp_clearedTriggers", {})[triggerInfo.id] == true)) then
         self:ClearAvailableTrigger(triggerInfo)
         return
     end
@@ -8393,6 +8434,9 @@ function creature:DispatchAvailableTrigger(triggerInfo)
 end
 
 function creature:ClearAvailableTrigger(triggerInfo)
+    local clearedTriggers = self:get_or_add("_tmp_clearedTriggers", {})
+    clearedTriggers[triggerInfo.id] = true
+
 	local availableTriggers = self:get_or_add("availableTriggers", {})
 	local deletes = {}
 	for key,value in pairs(availableTriggers) do

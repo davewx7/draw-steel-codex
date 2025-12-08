@@ -3339,16 +3339,16 @@ end
 function CharacterModifier:HasTriggeredEvent(creature, eventName, targetsOther)
 	if self:has_key('triggeredAbility') and self.triggeredAbility.trigger == eventName then
 
-        if self.triggeredAbility:try_get("whenActive", "always") == "combat" and (dmhub.initiativeQueue == nil or dmhub.initiativeQueue.hidden) then
-            return false
-        end
-
         local subject = self.triggeredAbility:try_get("subject", "self")
         if subject == "self" and targetsOther then
             return false
         end
 
         if subject ~= "self" and subject ~= "any" and subject ~= "selfandallies" and subject ~= "selfandheroes" and not targetsOther then
+            return false
+        end
+
+        if self.triggeredAbility:try_get("whenActive", "always") == "combat" and (dmhub.initiativeQueue == nil or dmhub.initiativeQueue.hidden) then
             return false
         end
 
