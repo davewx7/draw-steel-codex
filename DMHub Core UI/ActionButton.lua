@@ -15,7 +15,7 @@ local AVAILABLE_DIAMOND_SIZE = 12
 local AVAILABLE_LINE_HEIGHT = 11
 local AVAILABLE_LINE_TMARGIN = 10
 
-local LABEL_FONT_FACE = "Newzald"
+local LABEL_FONT_FACE = "Berling"
 local LABEL_FONT_SIZE = 18
 
 local gradientStops = {
