@@ -5,6 +5,7 @@
 local mod = dmhub.GetModLoading()
 
 local _fireControllerEvent = CharacterBuilder._fireControllerEvent
+local _getState = CharacterBuilder._getState
 local _getToken = CharacterBuilder._getToken
 
 local INITIAL_TAB = "builder"
@@ -32,12 +33,175 @@ function CharacterBuilder._characterBulderPanel(tabId)
     }
 end
 
+function CharacterBuilder._descriptorsPanel()
+
+    local function makeDescriptionLabel(labelText, eventHandlers)
+        local itemConfig = {
+            classes = {"label", "description-item"},
+            width = "50%",
+            halign = "right",
+            text = "--",
+            refreshToken = function(element)
+                element:FireEvent("updateState", _getState())
+            end,
+        }
+
+        if eventHandlers then
+            for k, v in pairs(eventHandlers) do
+                itemConfig[k] = v
+            end
+        end
+
+        return gui.Panel{
+            height = "auto",
+            halign = "left",
+            width = "auto",
+            flow = "horizontal",
+            gui.Label{
+                classes = {"label", "description-label"},
+                halign = "left",
+                width = "50%",
+                text = labelText .. ":",
+            },
+            gui.Label(itemConfig)
+        }
+    end
+
+    local weight = makeDescriptionLabel("Weight", {
+        updateState = function(element, state)
+            -- TODO: Update the label's .text property from the state
+        end,
+    })
+    local height = makeDescriptionLabel("Height", {
+        updateState = function(element, state)
+            -- TODO: Update the label's .text property from the state
+        end,
+    })
+    local hair = makeDescriptionLabel("Hair", {
+        updateState = function(element, state)
+            -- TODO: Update the label's .text property from the state
+        end,
+    })
+    local eyes = makeDescriptionLabel("Eyes", {
+        updateState = function(element, state)
+            -- TODO: Update the label's .text property from the state
+        end,
+    })
+    local build = makeDescriptionLabel("Build", {
+        updateState = function(element, state)
+            -- TODO: Update the label's .text property from the state
+        end,
+    })
+    local skin = makeDescriptionLabel("Skin", {
+        updateState = function(element, state)
+            -- TODO: Update the label's .text property from the state
+        end,
+    })
+    local gender = makeDescriptionLabel("Gender", {
+        updateState = function(element, state)
+            -- TODO: Update the label's .text property from the state
+        end,
+    })
+    local pronouns = makeDescriptionLabel("Pronouns", {
+        updateState = function(element, state)
+            -- TODO: Update the label's .text property from the state
+        end,
+    })
+
+    return gui.Panel{
+        classes = {"panel-base"},
+        width = "100%",
+        height = "auto",
+        valign = "top",
+        flow = "horizontal",
+        -- vmargin = 14,
+        vpad = 14,
+        bgimage = true,
+        borderColor = Styles.textColor,
+        border = {y1 = 1, y2 = 0, x1 = 0, x2 = 0},
+
+        -- Left Side
+        gui.Panel{
+            classes = {"panel-base"},
+            width = "50%-12",
+            height = "auto",
+            hmargin = 4,
+            valign = "top",
+            flow = "vertical",
+            borderColor = "teal",
+            border = 1,
+            height,
+            weight,
+            hair,
+            eyes,
+        },
+
+        -- Right Side
+        gui.Panel{
+            classes = {"panel-base"},
+            width = "50%-12",
+            height = "auto",
+            hmargin = 4,
+            valign = "top",
+            flow = "vertical",
+            borderColor = "teal",
+            border = 1,
+            build,
+            skin,
+            gender,
+            pronouns,
+        },
+    }
+end
+
 function CharacterBuilder._characterDescriptionPanel(tabId)
+
+    local descriptorsPanel = CharacterBuilder._descriptorsPanel()
+
+    local physicalFeaturesPanel = gui.Panel{
+        classes = {"panel-base"},
+        width = "98%",
+        height = "80%",
+        valign = "top",
+        halign = "center",
+        flow = "vertical",
+        vscroll = true,
+
+        gui.Label{
+            classes = {"label", "description-label"},
+            halign = "left",
+            valign = "top",
+            width = "auto",
+            text = "Physical Features:",
+        },
+        gui.Label{
+            classes = {"label", "description-item"},
+            hmargin = 4,
+            width = "98%",
+            halign = "left",
+            valign = "top",
+            text = "--",
+            -- bgimage = true,
+            border = 1,
+            borderColor = "purple",
+            refreshToken = function(element)
+                element:FireEvent("updateState", _getState())
+            end,
+            updateState = function(element, state)
+                -- TODO: Update the label's .text property from the state
+            end,
+        }
+    }
+
     return gui.Panel {
         width = "96%",
-        height = "60%",
+        height = "90%",
         halign = "center",
         valign = "top",
+        flow = "vertical",
+        -- bgimage = true,
+        border = 1,
+        borderColor = "yellow",
         data = {
             id = tabId,
         },
@@ -46,19 +210,15 @@ function CharacterBuilder._characterDescriptionPanel(tabId)
             element:SetClass("collapsed", tabId ~= element.data.id)
         end,
 
-        gui.Label{
-            width = "100%",
-            height = "auto",
-            valign = "top",
-            text = "Description content here...",
-        }
+        descriptorsPanel,
+        physicalFeaturesPanel,
     }
 end
 
 function CharacterBuilder._characterExplorationPanel(tabId)
     return gui.Panel {
         width = "96%",
-        height = "60%",
+        height = "80%",
         halign = "center",
         valign = "top",
         data = {

@@ -17,6 +17,14 @@ CharacterBuilder.COLORS = {
 }
 
 CharacterBuilder.SIZES = {
+    -- Panels
+    CHARACTER_PANEL_WIDTH = 447,
+    AVATAR_DIAMETER = 185,
+
+    -- Labels
+    DESCRIPTION_LABEL_PAD = 4,
+
+    -- Buttons
     ACTION_BUTTON_WIDTH = 225,
     ACTION_BUTTON_HEIGHT = 45,
 
@@ -32,8 +40,6 @@ CharacterBuilder.SIZES = {
 
     BUTTON_SPACING = 12,
 
-    CHARACTER_PANEL_WIDTH = 447,
-    AVATAR_DIAMETER = 185,
 }
 CharacterBuilder.SIZES.BUTTON_PANEL_WIDTH = CharacterBuilder.SIZES.ACTION_BUTTON_WIDTH + 60
 CharacterBuilder.SIZES.CENTER_PANEL_WIDTH = "100%-" .. (30 + CharacterBuilder.SIZES.BUTTON_PANEL_WIDTH + CharacterBuilder.SIZES.CHARACTER_PANEL_WIDTH)
@@ -85,22 +91,22 @@ function CharacterBuilder._panelStyles()
         {
             selectors = {CharacterBuilder.CONTROLLER_CLASS},
             bgcolor = "#ffffff",
-            bgimage = nil,
+            bgimage = true,
             gradient = gui.Gradient{
                 type = "radial",
                 point_a = {x = 0.5, y = 0.5},
                 point_b = {x = 0.5, y = 1.0},
                 stops = {
-                    {position = 0.00, color = "#ffffff"},
-                    {position = 0.08, color = "#e0e0e0"},
-                    {position = 0.15, color = "#c0c0c0"},
-                    {position = 0.22, color = "#a0a0a0"},
-                    {position = 0.30, color = "#808080"},
-                    {position = 0.45, color = "#606060"},
-                    {position = 0.60, color = "#404040"},
-                    {position = 0.75, color = "#202020"},
-                    {position = 0.88, color = "#101010"},
-                    {position = 1.00, color = "#000000"},
+                    {position = -0.01, color = "#1c1c1c"},
+                    {position = 0.00, color = "#1c1c1c"},
+                    {position = 0.12, color = "#191919"},
+                    {position = 0.25, color = "#161616"},
+                    {position = 0.37, color = "#131413"},
+                    {position = 0.50, color = "#101110"},
+                    {position = 0.62, color = "#0d0f0d"},
+                    {position = 0.75, color = "#0b0d0b"},
+                    {position = 0.87, color = "#090c0a"},
+                    {position = 1.00, color = "#080b09"},
                 },
             },
         },
@@ -129,6 +135,25 @@ function CharacterBuilder._labelStyles()
             fontSize = 40,
             bold = true,
         },
+        {
+            selectors = {"description-label"},
+            width = "50%",
+            height = "auto",
+            halign = "left",
+            vpad = CharacterBuilder.SIZES.DESCRIPTION_LABEL_PAD,
+            textAlignment = "left",
+            fontSize = 18,
+            bold = true,
+        },
+        {
+            selectors = {"description-item"},
+            width = "50%",
+            height = "auto",
+            halign = "left",
+            vpad = CharacterBuilder.SIZES.DESCRIPTION_LABEL_PAD,
+            textAlignment = "left",
+            fontSize = 18,
+        }
     }
 end
 
