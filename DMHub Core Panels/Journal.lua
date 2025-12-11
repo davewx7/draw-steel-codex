@@ -925,13 +925,33 @@ CreateFolderContentsPanel = function(journalPanel, folderid)
     return contentPanel
 end
 
-local function GetRecentDocuments()
-    local result = {}
+Commands.getdocument = function()
     local docs = assets.pdfDocumentsTable
     for k, doc in pairs(docs or {}) do
         if not doc.hidden then
-            result[#result + 1] = doc
+            print("VENLA: ", k, doc.description)
         end
+    end
+end
+
+local GetRecentDocumentsSetting = setting {
+
+    id = "recentDocuments",
+    description = "Recent Documents",
+    storage = "preference",
+    default = { { id = "e6cab5b7-a1c9-4b12-ad06-ed573f6ba904" }, { id = "cc66844a-04d0-49a0-8687-65ef83b15363" }, { id = "4dad1bc1-d23a-4780-ac6a-536a0f9cd9b9" } },
+
+}
+
+
+local function GetRecentDocuments()
+    local result = {}
+    local docs = assets.pdfDocumentsTable
+
+    for k, entry in ipairs(GetRecentDocumentsSetting:Get()) do
+        local doc = docs[entry.id]
+
+        result[#result + 1] = doc
     end
 
     return result
@@ -965,13 +985,12 @@ local function MakeRecentDocumentPanel(documentnumber)
             element.selfStyle.borderWidth = 0
         end,
 
-        hover = function(element)       
-            
+        hover = function(element)
             element.selfStyle.borderWidth = 2
             element.selfStyle.borderColor = "white"
 
             local member = documents[documentnumber]
-            
+
             if member.nodeType ~= "pdf" then
                 return
             end
@@ -980,7 +999,7 @@ local function MakeRecentDocumentPanel(documentnumber)
             local xadjustment = -35
             local dock = element:FindParentWithClass("dock")
 
-            
+
 
             if dock ~= nil then
                 halign = dock.data.TooltipAlignment()
