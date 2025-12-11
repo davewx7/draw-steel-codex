@@ -2500,7 +2500,7 @@ CreateAbilityController = function()
 
                         hover = function(element)
                             if mode.rules ~= nil and mode.rules ~= "" then
-                                gui.Tooltip(StringInterpolateGoblinScript(mode.rules, g_token.properties))(element)
+                                gui.Tooltip{valign = "top", text = StringInterpolateGoblinScript(mode.rules, g_token.properties)}(element)
                             end
                         end,
 
