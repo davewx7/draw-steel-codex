@@ -3743,6 +3743,32 @@ creature.RegisterSymbol{
     }
 }
 
+creature.RegisterSymbol{
+    symbol = "complications",
+    lookup = function(c)
+        local results = {}
+
+        local complications = c:Complications()
+
+        for _, complication in ipairs(complications) do
+            results[#results + 1] = complication.name
+        end
+
+        return StringSet.new {
+            strings = results,
+        }
+    end,
+    help = {
+        name = "Complications",
+        type = "set",
+        desc = "Complications the creature has.",
+        seealso = {},
+        examples = {
+            'Complications has "Coward"',
+        },
+    }
+}
+
 function creature:StartOnDying()
     self:RemoveMatchingOngoingEffects(function(ongoingEffect)
         return ongoingEffect.removeOnEoEOrDying
