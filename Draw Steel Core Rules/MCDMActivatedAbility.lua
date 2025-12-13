@@ -1494,7 +1494,8 @@ function ActivatedAbility:DescribeRange(castingCreature)
     if self.targetType == "cube" then
         return string.format("%s cube within %s", MeasurementSystem.NativeToDisplayString(radius), MeasurementSystem.NativeToDisplayStringWithUnits(range))
     elseif self.targetType == "line" then
-        return string.format("%s x %s line within 1 square", MeasurementSystem.NativeToDisplayString(range), MeasurementSystem.NativeToDisplayString(radius))
+        local distance = self:GetLineDistance(castingCreature)
+        return string.format("%s x %s line within %d square%s", MeasurementSystem.NativeToDisplayString(range), MeasurementSystem.NativeToDisplayString(radius), MeasurementSystem.NativeToDisplayString(distance), cond(distance ~= 1, "s", ""))
 	elseif self.targetType == "all" then
 		return string.format("%s burst", MeasurementSystem.NativeToDisplayString(range))
     end
@@ -2226,6 +2227,30 @@ function ActivatedAbility:GetRange(casterCreature, castingSymbols, selfRange)
     end
 
 	return result
+end
+
+
+function ActivatedAbility:GetLineDistance(castingCreature, castingSymbols)
+    local distance = self.lineDistance
+    if tonumber(distance) ~= nil then
+        return tonumber(distance)
+    end
+
+	castingSymbols = castingSymbols or {}
+	local symbols = {
+		ability = self,
+		mode = castingSymbols.mode or 1,
+		charges = castingSymbols.charges or 0,
+		upcast = castingSymbols.upcast or 0,
+        invoker = castingSymbols.invoker,
+	}
+
+    if castingCreature == nil then
+		local _,_,range = string.find(selfRange, "^(%d+)")
+        return tonumber(range) or 1
+    end
+
+    return dmhub.EvalGoblinScriptDeterministic(self.lineDistance, castingCreature:LookupSymbol(symbols))
 end
 
 ActivatedAbility.registeredProperties = {}
