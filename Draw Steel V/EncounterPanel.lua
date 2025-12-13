@@ -10,7 +10,7 @@ local g_numHeroesSetting = setting{
     enum = {
         {
             value = 3,
-            text = "Three or Less Heroes",
+            text = "Three Heroes",
         },
         {
             value = 4,
@@ -22,7 +22,7 @@ local g_numHeroesSetting = setting{
         },
         {
             value = 6,
-            text = "Six or More Heroes",
+            text = "Six Heroes",
         },
     }
 }
