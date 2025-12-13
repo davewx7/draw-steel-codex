@@ -14,6 +14,150 @@ ActivatedAbility.RegisterType
 	end
 }
 
+
+--- @class ActivatedAbilityPurgeEffectsChatMessage
+--- @field ability ActivatedAbility
+ActivatedAbilityPurgeEffectsChatMessage = RegisterGameType("ActivatedAbilityPurgeEffectsChatMessage")
+ActivatedAbilityPurgeEffectsChatMessage.conditions = {}
+ActivatedAbilityPurgeEffectsChatMessage.casterid = ""
+ActivatedAbilityPurgeEffectsChatMessage.chatMessage = ""
+ActivatedAbilityPurgeEffectsChatMessage.targetids = {}
+
+function ActivatedAbilityPurgeEffectsChatMessage:Render(message)
+    local resultPanel
+
+    local token = self:GetCasterToken()
+    local targets = self:GetTargetTokens()
+
+
+    if token == nil or (not token.valid) then
+        return gui.Panel{
+            width = 0, height = 0,
+        }
+    end
+
+    local resultPanel
+
+    local tokenPanel = gui.CreateTokenImage(token,{
+        scale = 0.9,
+        valign = "center",
+        halign = "left",
+
+        interactable = true,
+        hover = gui.Tooltip(token.name),
+    })
+
+    local targetTokenPanels = {}
+    for _,tok in ipairs(self:GetTargetTokens()) do
+        if tok.valid then
+            targetTokenPanels[#targetTokenPanels+1] = gui.CreateTokenImage(tok, {
+                width = 32,
+                height = 32,
+                valign = "center",
+                halign = "left",
+
+                interactable = true,
+                hover = gui.Tooltip(tok.name),
+            })
+        end
+    end
+
+    local conditionTable = dmhub.GetTable(CharacterCondition.tableName) or {}
+    local ongoingEffectsTable = dmhub.GetTable("characterOngoingEffects") or {}
+
+    local conditionNames = {}
+
+    for _,conditionid in ipairs(self.conditions) do
+        local conditionInfo = conditionTable[conditionid] or ongoingEffectsTable[conditionid]
+        if conditionInfo ~= nil then
+            conditionNames[#conditionNames+1] = conditionInfo.name
+        else
+            conditionNames[#conditionNames+1] = "Unknown Effect"
+        end
+    end
+
+    local effectName = table.concat(conditionNames, ", ")
+
+    local messageText = string.format("Removed %s", effectName)
+
+    resultPanel = gui.Panel{
+        classes = {"chat-message-panel"},
+
+ 
+        flow = "vertical",
+        width = "100%",
+        height = "auto",
+
+        refreshMessage = function(element, message)
+        end,
+
+        gui.Panel{
+			classes = {'separator'},
+		},
+
+        gui.Panel{
+
+            width = "100%",
+            height = "auto",
+            flow = "horizontal",
+
+            tokenPanel,
+
+            gui.Panel{
+                flow = "vertical",
+                width = "100%-80",
+                height = "auto",
+                halign = "right",
+                valign = "top",
+
+                gui.Label{
+                    fontSize = 14,
+                    width = "auto",
+                    height = "auto",
+                    maxWidth = 420,
+                    halign = "left",
+                    valign = "top",
+                    text = string.format("<b>%s</b>\n%s", self.chatMessage, messageText),
+                    hover = function(element)
+                        local token = self:GetCasterToken()
+                        if token == nil then
+                            return
+                        end
+	                    local dock = element:FindParentWithClass("dock")
+	                    element.tooltipParent = dock
+
+                        --TODO: show a more detailed breakdown of damage messaging.
+                    end,
+                },
+
+                gui.Panel{
+                    width = "50%",
+                    height = "auto",
+                    halign = "left",
+                    flow = "horizontal",
+                    wrap = true,
+                    children = targetTokenPanels,
+                }
+            },
+        },
+    }
+
+    return resultPanel
+end
+
+function ActivatedAbilityPurgeEffectsChatMessage:GetCasterToken()
+    return dmhub.GetCharacterById(self.casterid)
+end
+
+--- @return CharacterToken[]
+function ActivatedAbilityPurgeEffectsChatMessage:GetTargetTokens()
+    local result = {}
+    for i,tokenid in ipairs(self.targetids) do
+        result[#result+1] = dmhub.GetCharacterById(tokenid)
+    end
+    return result
+end
+
 ActivatedAbilityPurgeEffectsBehavior.summary = 'Purge Ongoing Effects'
 ActivatedAbilityPurgeEffectsBehavior.mode = 'conditions'
 ActivatedAbilityPurgeEffectsBehavior.ongoingEffect = 'none'
@@ -21,6 +165,7 @@ ActivatedAbilityPurgeEffectsBehavior.purgeType = 'all'
 ActivatedAbilityPurgeEffectsBehavior.useStacks = false
 ActivatedAbilityPurgeEffectsBehavior.stacksFormula = "1"
 ActivatedAbilityPurgeEffectsBehavior.damageToSelf = ""
+ActivatedAbilityPurgeEffectsBehavior.chatMessage = ""
 
 ActivatedAbilityPurgeEffectsBehavior.modeOptions = {
     {
@@ -56,10 +201,32 @@ function ActivatedAbilityPurgeEffectsBehavior:Cast(ability, casterToken, targets
         return
     end
 
+    local messages = {}
+
     for _,target in ipairs(targets) do
         if target.token ~= nil then
             self:CastOnTarget(casterToken, target.token, ability, options)
+
+            if self.chatMessage ~= "" then
+                local existingMessage = messages[#messages]
+                if existingMessage ~= nil and dmhub.DeepEqual(existingMessage.conditions, self.conditions) then
+                    existingMessage.targetids[#existingMessage.targetids+1] = target.token.charid
+                else
+                    local msg = ActivatedAbilityPurgeEffectsChatMessage.new{
+                        ability = ability,
+                        casterid = casterToken.charid,
+                        chatMessage = self.chatMessage,
+                        conditions = self.conditions,
+                        targetids = { target.token.charid },
+                    }
+                    messages[#messages+1] = msg
+                end
+            end
         end
+    end
+
+    for _,message in ipairs(messages) do
+        chat.SendCustom(message)
     end
 
     ability:CommitToPaying(casterToken, options)
@@ -74,6 +241,8 @@ function ActivatedAbilityPurgeEffectsBehavior:CastOnTarget(casterToken, targetTo
             filteredEffects[#filteredEffects+1] = effect
         end
     end
+
+    local result = {}
 
     if self.mode == "conditions" and targetCreature:has_key("inflictedConditions") then
         local conditions = {}
@@ -91,7 +260,7 @@ function ActivatedAbilityPurgeEffectsBehavior:CastOnTarget(casterToken, targetTo
         end
 
         if #conditions == 0 then
-            return
+            return result
         end
 
         local conditionsToPurge = {}
@@ -111,6 +280,7 @@ function ActivatedAbilityPurgeEffectsBehavior:CastOnTarget(casterToken, targetTo
                 execute = function()
                     for _,condid in ipairs(conditionsToPurge) do
                         targetCreature:InflictCondition(condid, {purge = true})
+                        result[#result+1] = condid
                     end
 
                     local damage = tonumber(self.damageToSelf)
@@ -123,7 +293,7 @@ function ActivatedAbilityPurgeEffectsBehavior:CastOnTarget(casterToken, targetTo
     end
 
     if #filteredEffects == 0 then
-        return
+        return result
     end
 
     local numStacks = nil
@@ -137,6 +307,7 @@ function ActivatedAbilityPurgeEffectsBehavior:CastOnTarget(casterToken, targetTo
             execute = function()
                 for _,effect in ipairs(filteredEffects) do
                     numStacks = targetCreature:RemoveOngoingEffect(effect.ongoingEffectid, numStacks)
+                    result[#result+1] = effect.ongoingEffectid
                 end
             end,
         }
@@ -144,8 +315,9 @@ function ActivatedAbilityPurgeEffectsBehavior:CastOnTarget(casterToken, targetTo
         ability:CommitToPaying(casterToken, options)
     else
         self:ShowSelectionDialog(casterToken, targetToken, ability, filteredEffects, options, numStacks)
-
     end
+
+    return result
 end
 
 function ActivatedAbilityPurgeEffectsBehavior:AppliesToEffect(effect)
@@ -629,6 +801,23 @@ function ActivatedAbilityPurgeEffectsBehavior:EditorItems(parentPanel)
             change = function(element)
                 self.targetDuration = element.idChosen
             end,
+        },
+    }
+
+    result[#result+1] = gui.Panel{
+        classes = {"formPanel"},
+        gui.Label{
+            classes = {"formLabel"},
+            text = "Log Message:",
+        },
+        gui.Input{
+            classes = {"formInput"},
+            text = self.chatMessage,
+            events = {
+                change = function(element)
+                    self.chatMessage = element.text
+                end
+            }
         },
     }
 
