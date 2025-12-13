@@ -22,6 +22,8 @@ Follower.characteristic = "mgt"
 Follower.ancestry = ""
 Follower.followerToken = ""
 Follower.availableRolls = 0
+Follower.manual = false
+
 
 function Follower.Create()
     return Follower.new{

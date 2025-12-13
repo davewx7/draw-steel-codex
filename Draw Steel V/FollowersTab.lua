@@ -24,6 +24,7 @@ local Styles = {
         classes = { "avatarPanel"},
         borderColor = Styles.textColor,
         borderWidth = 2,
+        hmargin = 8,
         width = 80,
         height = 120,
         halign = "center",
@@ -57,6 +58,7 @@ local Styles = {
         fontSize = 20,
         bold = true,
         color = Styles.textColor,
+        hmargin = 5,
     }
 }
 
@@ -132,8 +134,14 @@ CreateFollowerMonster = function(followerInfo, mentorToken, pregenRetainerId)
         followerInfo.followerToken = newMonster.id
         followerInfo.portrait = newMonster.offTokenPortrait
 
-        local followers = EnsureFollowers(mentorToken.properties)
-        followers[#followers + 1] = followerInfo
+        mentorToken:ModifyProperties{
+            description = "Assign Follower",
+            execute = function()
+                local followers = EnsureFollowers(mentorToken.properties)
+                followers[#followers + 1] = followerInfo
+            end,
+        }
+        
         newMonster:ShowSheet()
     end)
 
@@ -234,7 +242,7 @@ function CharSheet.FollowersInnerPanel()
                     { id = "artisan", text = "Artisan" },
                     { id = "sage", text = "Sage" },
                     { id = "premaderetainer", text = "Premade Retainer" },
-                    { id = "customretainer", text = "Custom Retainer" },
+
                     { id = "existing", text = "Manual" },
                 },
 
@@ -382,90 +390,6 @@ function CharSheet.FollowersInnerPanel()
                         end,
                     },
                 },
-
-                --[[ gui.Multiselect{
-                    classes = {cond(follower.type == "retainer", "collapsed-anim")},
-                    options = languageList,
-                    width = "auto",
-                    height = "auto",
-                    margin = 3,
-                    flow = "horizontal",
-                    sort = true,
-                    textDefault = "Select 2 languages...",
-                    dropdown = {
-                        width = 170,
-                    },
-                    chipPos = "right",
-                    chipPanel = {
-                    width = "100%-160",
-                        halign = "left",
-                    },
-                    chips = {
-                        halign = "left",
-                        valign = "center",
-                    },
-                    create = function(element)
-                        element:FireEvent("refreshAll")
-                    end,
-                    change = function(element)
-                        if element.idChosen == "none" then return end
-                        follower.languages = element.value
-                    end,
-                    refreshAll = function(element)
-                        if follower.type == "retainer" then
-                            element:SetClass("collapsed-anim", true)
-                            return
-                        else
-                            element:SetClass("collapsed-anim", false)
-                        end
-                        local selected = follower.languages or {}
-                        element:FireEvent("refreshSet", languageList, selected)
-                        element.value = selected
-                    end,
-                },
-
-                gui.Multiselect{
-                    classes = {cond(follower.type == "retainer", "collapsed-anim")},
-                    options = (follower.type == "sage") and sageSkills or artisanSkills,
-                    width = "auto",
-                    height = "auto",
-                    margin = 3,
-                    flow = "horizontal",
-                    sort = true,
-                    textDefault = "Select 4 skills...",
-                    dropdown = {
-                        width = 170,
-                    },
-                    chipPos = "right",
-                    chipPanel = {
-                    width = "100%-160",
-                        halign = "left",
-                    },
-                    chips = {
-                        halign = "left",
-                        valign = "center",
-                    },
-                    create = function(element)
-                        element:FireEvent("refreshAll")
-                    end,
-                    change = function(element)
-                        if element.idChosen == "none" then return end
-                        follower.skills = element.value
-                    end,
-                    refreshAll = function(element)
-                        if follower.type == "retainer" then
-                            element:SetClass("collapsed-anim", true)
-                            return
-                        else
-                            element:SetClass("collapsed-anim", false)
-                        end
-
-                        local options = follower.type == "sage" and sageSkills or artisanSkills
-                        local selected = follower.skills or {}
-                        element:FireEvent("refreshSet", options, selected)
-                        element.value = selected
-                    end,
-                }, ]]
             },
 
             gui.Button{
@@ -511,52 +435,6 @@ function CharSheet.FollowersInnerPanel()
                 end
             },
         }        
-
-        return resultPanel
-    end
-
-    local FollowerAvatar = function(follower)
-        local resultPanel
-
-        resultPanel = gui.Panel {
-            classes = { "avatarPanel"},
-            halign = "left",
-            valign = "top",
-            flow = "vertical",
-
-            bgimage = follower.portrait,
-
-            refreshAll = function(element)
-                element.bgimage = follower.portrait
-            end,
-
-            --[[ gui.IconEditor {
-                
-                library = "Avatar",
-                restrictImageType = "Avatar",
-                allowPaste = true,
-                value = follower.portrait or false,
-
-                refreshAll = function(element, info)
-                    if follower and follower.followerToken then
-                        local followerToken = dmhub.GetTokenById(follower.followerToken)
-                        if followerToken then
-                            local portrait = followerToken.portrait
-                            follower.portrait = portrait
-                            element.value = portrait
-                        end
-                    else
-                        element.value = follower.portrait or false
-                    end
-                end,
-
-                change = function(element)
-                    if follower then
-                        follower.portrait = element.value
-                    end
-                end,
-            }, ]]
-        }
 
         return resultPanel
     end
@@ -707,6 +585,11 @@ function CharSheet.FollowersInnerPanel()
 
                     bgimage = follower.portrait,
 
+                    --[[ click = function(element)
+                        local followerToken = dmhub.GetTokenById(follower.followerToken)
+                        followerToken:ShowSheet()
+                    end, ]]
+
                     refreshAll = function(element)
                         local followerToken = dmhub.GetTokenById(follower.followerToken)
                         if followerToken then
@@ -737,13 +620,13 @@ function CharSheet.FollowersInnerPanel()
                                 text = "Type:",
                             },
                             gui.Label{
-                                classes = { "followerLabel", (cond(follower:try_get("manual"), "collapsed"))},
+                                classes = { "followerLabel", (cond(follower.manual, "collapsed"))},
                                 width = "auto",
                                 height = "auto",
                                 text = string.upper_first(follower.type),
                             },
                             gui.Dropdown{
-                                classes = (cond(not follower:try_get("manual"), "collapsed")),
+                                classes = (cond(not follower.manual, "collapsed")),
                                 options = {
                                     {id = "artisan", text = "Artisan"},
                                     {id = "sage", text = "Sage"},
