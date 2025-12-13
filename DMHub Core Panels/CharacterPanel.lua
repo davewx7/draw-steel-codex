@@ -258,7 +258,9 @@ local function AbilityDisplayPanel()
                 end
             end
 
-            element.children = { panel }
+            if panel ~= nil then
+                element.children = { panel }
+            end
         end,
     }
     return resultPanel
