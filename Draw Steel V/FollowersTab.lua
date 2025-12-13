@@ -178,6 +178,7 @@ function CharSheet.FollowersInnerPanel()
                 follower = Follower.Create()
                 follower.characteristic = "mgt"
                 newFollowerType = "none"
+                retainerType = nil
                 resultPanel:FireEventTree("refreshAll")
             end,
 
@@ -216,7 +217,7 @@ function CharSheet.FollowersInnerPanel()
             },
 
             gui.Panel{
-                classes = {cond(newFollowerType == "none", "collapsed-anim")},
+                classes = {"collapsed-anim"},
                 flow = "horizontal",
                 width = "auto",
                 height = 30,
@@ -232,6 +233,10 @@ function CharSheet.FollowersInnerPanel()
                         follower.name = element.text
                         resultPanel:FireEventTree("refreshAll")
                     end,
+
+                    refreshAll = function(element)
+                        element.text = follower.name or ""
+                    end,
                 },
 
                 refreshAll = function(element)
@@ -244,9 +249,10 @@ function CharSheet.FollowersInnerPanel()
             },
 
             gui.Panel{
-                classes = {cond(newFollowerType ~= "premaderetainer", "collapsed-anim")},
+                classes = {"collapsed-anim"},
                 width = "auto",
                 height = "auto",
+                vmargin = 5,
 
                 refreshAll = function(element)
                     if newFollowerType ~= "premaderetainer" then
@@ -261,6 +267,10 @@ function CharSheet.FollowersInnerPanel()
 
                     idChosen = "none",
 
+                    refreshAll = function(element)
+                        element.idChosen = retainerType or "none"
+                    end,
+
                     change = function(element)
                         retainerType = element.idChosen
                     end,
@@ -269,7 +279,7 @@ function CharSheet.FollowersInnerPanel()
 
             --Artisan or Sage characteristics
             gui.Panel{
-                classes = {cond(newFollowerType ~= "artisan" and newFollowerType ~= "sage", "collapsed-anim")},
+                classes = {"collapsed"},
                 flow = "vertical",
                 height = "auto",
                 width = "auto",
@@ -278,6 +288,7 @@ function CharSheet.FollowersInnerPanel()
                         element:SetClass("collapsed-anim", true)
                     else
                         element:SetClass("collapsed-anim", false)
+                        element:SetClass("collapsed", false)
                     end
                 end,
 
@@ -307,7 +318,7 @@ function CharSheet.FollowersInnerPanel()
                 },
 
                 gui.Panel{
-                    classes = {cond(newFollowerType ~= "artisan", "collapsed-anim")},
+                    classes = {"collapsed-anim"},
                     flow = "horizontal",
                     width = "auto",
                     height = 30,
@@ -355,6 +366,7 @@ function CharSheet.FollowersInnerPanel()
                 halign = "center",
                 interactable = newFollowerType ~= "none",
                 text = "Create",
+                fontSize = 25,
 
                 refreshAll = function(element)
                     element.interactable = newFollowerType ~= "none"
