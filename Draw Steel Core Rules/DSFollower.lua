@@ -9,18 +9,21 @@ local mod = dmhub.GetModLoading()
 --- @field description string The description of the follower
 --- @field languages table Flag table of language ID's the follower knows
 --- @field skills table Flag table of skill ID's the follower knows
---- @field retainerToken string The token ID of the follower token if retainer type
+--- @field followerToken string The token ID of the follower token
 --- @field availableRolls number The number of downtime rolls allocated to the follower
 --- @field characteristic string The characteristic code for the follower's additional characteristic
 --- @field assignedTo table Flag list of tokens the follower was assigned to
-Follower = RegisterGameType("Follower")
+Follower = RegisterGameType("Follower", "Monster")
+RegisterGameType("Retainer", "Follower")
+RegisterGameType("Sage", "Follower")
+RegisterGameType("Artisan", "Follower")
 
 Follower.type = "artisan"
 Follower.portrait = "DEFAULT_MONSTER_AVATAR"
 Follower.name = "New Follower"
 Follower.characteristic = "mgt"
 Follower.ancestry = ""
-Follower.retainerToken = ""
+Follower.followerToken = ""
 Follower.availableRolls = 0
 
 function Follower.Create()
@@ -92,7 +95,7 @@ function Follower.Describe(self)
             s = s .. sList
         end
     else
-        local id = self.retainerToken or ""
+        local id = self.followerToken or ""
         if id and #id > 0 then
             local node = assets:GetMonsterNode(id)
             if node and node.monster and node.monster.info then
@@ -154,7 +157,7 @@ function Follower.ToTable(self)
         ancestry = self.ancestry or "",
         portrait = self.portrait or "",
         languages = self:try_get("languages", {}),
-        retainerToken = self.retainerToken or "",
+        followerToken = self.followerToken or "",
         availableRolls = self.availableRolls or 0,
     }
     return newFollower
@@ -358,8 +361,8 @@ function Follower:CreateEditorDialog(options)
                 allowPaste = true,
                 value = self.portrait or false,
                 refreshAll = function(element)
-                    if self:try_get("retainerToken") then
-                        local node = assets:GetMonsterNode(self.retainerToken)
+                    if self:try_get("followerToken") then
+                        local node = assets:GetMonsterNode(self.followerToken)
                         if node and node.monster then
                             self.portrait = node.monster.info.portrait
                             element.value = self.portrait
@@ -558,9 +561,9 @@ function Follower:CreateEditorDialog(options)
             },
             gui.Dropdown {
                 options = retainerTypes,
-                idChosen = self:try_get("retainerToken", "none"),
+                idChosen = self:try_get("followerToken", "none"),
                 change = function(element)
-                    self.retainerToken = element.idChosen
+                    self.followerToken = element.idChosen
                     editorPanel:FireEventTree("refreshAll")
                 end
             }

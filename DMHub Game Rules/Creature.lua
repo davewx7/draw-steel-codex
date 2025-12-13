@@ -9740,6 +9740,10 @@ function creature:IsValid()
 		return false
 	end
 
+	if self:try_get("retainerToken") then
+		return false
+	end
+
 	return true
 end
 
@@ -9899,6 +9903,13 @@ function creature:Repair(localOnly)
 		printf("Creature validation: repairing complicationid on character %s", charid)
 		self:AddComplication(self.complicationid)
 		self.complicationid = nil
+	end
+
+	if self:try_get("retainerToken") then
+		if self.retainerToken ~= "" then
+			self.followerToken = self.retainerToken
+		end
+		self.retainerToken = nil
 	end
 
 	if tok ~= nil then

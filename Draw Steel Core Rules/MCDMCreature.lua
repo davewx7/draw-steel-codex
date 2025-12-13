@@ -257,6 +257,23 @@ function monster:IsRetainer()
     return self:try_get("retainer", false)
 end
 
+function creature:IsArtisan()
+    return false
+end
+
+function monster:IsArtisan()
+    return self:try_get("followerType") == "artisan"
+end
+
+function creature:IsSage()
+    return false
+end
+
+function monster:IsSage()
+    return self:try_get("followerType") == "sage"
+end
+
+
 function creature:Retainers()
     return {}
 end
@@ -267,9 +284,11 @@ function character:Retainers()
 
     for _, follower in ipairs(followers) do
         if follower and follower.type == "retainer" then
-            local retainerToken = dmhub.GetTokenById(follower.retainerToken)
-            if retainerToken ~= nil then
-                retainers[#retainers + 1] = retainerToken
+            if follower:has_key("followerToken") then
+                local retainerToken = dmhub.GetTokenById(follower.followerToken)
+                if retainerToken ~= nil then
+                    retainers[#retainers + 1] = retainerToken
+                end
             end
         end
     end
@@ -294,15 +313,33 @@ function monster:GetMentor()
     if token == nil then
         return nil
     end
-    local partyMembers = dmhub.GetCharacterIdsInParty(token.partyid) or {}
 
+    --Check our party for a Mentor first
+    local partyMembers = dmhub.GetCharacterIdsInParty(token.partyid) or {}
     for _, charid in pairs(partyMembers) do
         local charToken = dmhub.GetTokenById(charid)
         if charToken ~= nil then
             local followers = charToken.properties:GetFollowers()
             for _, follower in ipairs(followers) do
-                if follower.retainerToken == token.charid then
+                if follower.followerToken == token.charid then
                     return charToken.properties
+                end
+            end
+        end
+    end
+
+    --Check other allied parties
+    local partyInfo = GetParty(token.partyid)
+    for id, _ in pairs(partyInfo.allyParties) do
+        partyMembers = dmhub.GetCharacterIdsInParty(id) or {}
+        for _, charid in ipairs(partyMembers) do
+            local charToken = dmhub.GetTokenById(charid)
+            if charToken ~= nil then
+                local followers = charToken.properties:GetFollowers()
+                for _, follower in ipairs(followers) do
+                    if follower.followerToken == token.charid then
+                        return charToken.properties
+                    end
                 end
             end
         end
