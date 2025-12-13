@@ -2438,6 +2438,54 @@ function ActivatedAbility:TargetTypeEditor()
 
 		},
 
+        gui.Panel{
+            classes = {"formPanel", cond(self.targetType ~= "line", "collapsed-anim")},
+            refreshAbility = function(element)
+                element:SetClass("collapsed-anim", self.targetType ~= "line")
+            end,
+	
+			gui.Label{
+				classes = "formLabel",
+				text = "Distance:",
+			},
+
+			gui.GoblinScriptInput{
+				classes = "formInput",
+				value = self.lineDistance,
+				change = function(element)
+					self.lineDistance = element.value
+					resultPanel:FireEventTree("refreshAbility")
+				end,
+				documentation = {
+					domains = self.domains,
+					help = " This GoblinScript is used to determine the distance of this <color=#00FFFF><link=ability>ability</link></color>'s line. The number it produces is the number of squares away from the caster that the line can start.",
+					output = "number",
+					examples = {
+						{
+							script = "4",
+							text = "The ability will have a distance of 4 squares.",
+						},
+						{
+							script = "1 + level",
+							text = "The ability will have a distance of 1 square, plus an additional 1 square for each level the creature using the ability has.",
+						},
+					},
+
+					subject = creature.helpSymbols,
+					subjectDescription = "The creature using the ability",
+					symbols = table.union({
+						ability = {
+							name = "Ability",
+							type = "ability",
+							desc = "The ability being used.",
+						},
+					}, ActivatedAbility.helpCasting),
+				}
+			},
+
+
+        },
+
 		gui.Panel{
 			classes = {"formPanel", cond(self.targetType == 'self' or self.targetType == 'map', 'collapsed-anim')},
 
@@ -2448,6 +2496,13 @@ function ActivatedAbility:TargetTypeEditor()
 			gui.Label{
 				classes = "formLabel",
 				text = "Range:",
+                refreshAbility = function(element)
+                    if self.targetType == 'line' then
+                        element.text = 'Length:'
+                    else
+                        element.text = 'Range:'
+                    end
+                end,
 			},
 
 			gui.GoblinScriptInput{
@@ -2455,6 +2510,7 @@ function ActivatedAbility:TargetTypeEditor()
 				value = self.range,
 				change = function(element)
 					self.range = element.value
+					resultPanel:FireEventTree("refreshAbility")
 				end,
 				documentation = {
 					domains = self.domains,
@@ -2463,11 +2519,11 @@ function ActivatedAbility:TargetTypeEditor()
 					examples = {
 						{
 							script = "10",
-							text = "The ability will have a range of 10 feet.",
+							text = "The ability will have a range of 10 squares.",
 						},
 						{
-							script = "20 + level*5",
-							text = "The ability will have a range of 20 feet, plus an additional 5 feet for each level the creature using the ability has.",
+							script = "10 + level*2",
+							text = "The ability will have a distance of 10 squares, plus an additional 2 squares for each level the creature using the ability has.",
 						},
 					},
 

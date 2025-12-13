@@ -60,6 +60,7 @@ ActivatedAbility.description = ""
 ActivatedAbility.flavor = ""
 
 ActivatedAbility.range = dmhub.unitsPerSquare
+ActivatedAbility.lineDistance = 1
 ActivatedAbility.rangeDisadvantage = ""
 ActivatedAbility.selfTarget = false
 ActivatedAbility.castImmediately = false --auto-casts immediately if there are no targeting choices.
