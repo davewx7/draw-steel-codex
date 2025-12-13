@@ -248,7 +248,7 @@ TokenHud.RegisterPanel{
                             m_minionDeathPanel = gui.Panel{
                                 styles = g_deadMinionIconStyles,
                                 click = function(element)
-                                    token.properties:TriggerEvent("creaturedeath", {})
+                                    token.properties:TriggerEvent("creaturedeath", {}) --this triggers the 'monster death' global event which will remove the minion.
                                     token.properties:MinionDeath()
                                     --game.DeleteCharacters{token.charid}
                                 end,
@@ -305,6 +305,9 @@ TokenHud.RegisterPanel{
                     halign = "center",
                     valign = "center",
                     interactable = true,
+					refresh = function(element)
+                        element.interactable = token.canControl
+                    end,
                     press = function(element)
                         element.parent.parent:GetChildrenWithClassRecursive("nameplate")[1]:FireEvent("press")
                     end,
@@ -395,6 +398,10 @@ TokenHud.RegisterPanel{
                 styles = {
                     Styles.ActionBar,
                 },
+
+				refresh = function(element)
+                    element.interactable = token.canControl
+                end,
 
                 think = function(element)
                     local r = math.sin(dmhub.Time()*2*math.pi)
