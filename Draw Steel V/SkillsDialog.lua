@@ -1,21 +1,41 @@
 --- Load all the visible skills from the skill table
+--- @param token LuaCharacterToken The token for which we're adding skills
 --- @return table skillList All the skills
-local function loadSkills()
+local function loadSkills(token)
     local skillsList = {}
     local skillsLookup = {}
     local categoriesLookup = {}
-    for id,item in pairs(dmhub.GetTableVisible(Skill.tableName)) do
-        local entry = {
-            id = id,
-            text = item.name,
-            category = item.category,
-        }
-        skillsList[#skillsList + 1] = entry
-        skillsLookup[id] = item.name
-        if categoriesLookup[item.category] == nil then
-            categoriesLookup[item.category] = {}
+
+    local creature = token.properties
+
+    -- The list of available skills depends on the type of creature we
+    -- are working with: Artisan followers get Crafting skill group.
+    -- Sage followers get Lore skill group. All others get all skills.
+    local categoriesAllowed = nil
+    print("THC:: ISFOLLOWER::", creature:IsFollower(), creature:try_get("followerType"))
+    if creature:IsFollower() then
+        local followerType = creature:try_get("followerType")
+        if followerType == "artisan" then
+            categoriesAllowed = {crafting = true}
+        elseif followerType == "sage" then
+            categoriesAllowed = {lore = true}
         end
-        categoriesLookup[item.category][id] = true
+    end
+
+    for id,item in pairs(dmhub.GetTableVisible(Skill.tableName)) do
+        if categoriesAllowed == nil or categoriesAllowed[item.category] then
+            local entry = {
+                id = id,
+                text = item.name,
+                category = item.category,
+            }
+            skillsList[#skillsList + 1] = entry
+            skillsLookup[id] = item.name
+            if categoriesLookup[item.category] == nil then
+                categoriesLookup[item.category] = {}
+            end
+            categoriesLookup[item.category][id] = true
+        end
     end
     table.sort(skillsList, function(a,b) return a.text < b.text end)
     return {list = skillsList, lookup = skillsLookup, categories = categoriesLookup}
@@ -751,13 +771,14 @@ function CharacterSkillDialog.CreateAsChild(options)
     if not options then return end
 
     local token = CharacterSheet.instance and CharacterSheet.instance.data and CharacterSheet.instance.data.info.token
-    if not token or not token.properties or not token.properties:IsHero() then return end
+    if not token or not token.properties then return end
+    if not token.properties:IsHero() and not token.properties:IsFollower() then return end
 
     local levelChoices = token.properties:GetLevelChoices()
-    local selectedFeatures = token.properties:GetClassFeaturesAndChoicesWithDetails()
+    local selectedFeatures = token.properties:IsHero() and token.properties:GetClassFeaturesAndChoicesWithDetails() or {}
     local customFeatures = token.properties:try_get("characterFeatures", {})
     local skillChoices = aggregateSkillChoices(selectedFeatures, customFeatures, levelChoices)
-    local skills = loadSkills()
+    local skills = loadSkills(token)
     addCompensatingFeatures(skillChoices, skills)
 
     local opts = validateOptions(options)
@@ -853,6 +874,7 @@ function CharacterSkillDialog.CreateAsChild(options)
         classes = {"skilldlg-button", "skilldlg-base"},
         width = "auto",
         halign = "left",
+        valign = "top",
         tmargin = 12,
         hpad = 20,
         vpad = 4,
