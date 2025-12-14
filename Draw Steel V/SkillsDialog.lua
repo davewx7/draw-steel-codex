@@ -12,7 +12,6 @@ local function loadSkills(token)
     -- are working with: Artisan followers get Crafting skill group.
     -- Sage followers get Lore skill group. All others get all skills.
     local categoriesAllowed = nil
-    print("THC:: ISFOLLOWER::", creature:IsFollower(), creature:try_get("followerType"))
     if creature:IsFollower() then
         local followerType = creature:try_get("followerType")
         if followerType == "artisan" then
@@ -117,7 +116,7 @@ end
 --- @param customFeatures table The list of custom features on the character
 --- @param levelChoices table The features the character has selected
 --- @return table skillChoices The aggregated options with selections made
-local function aggregateSkillChoices(selectedFeatures, customFeatures, levelChoices)
+local function aggregateSkillChoicesHero(selectedFeatures, customFeatures, levelChoices)
     local skillChoices = {
         features = {},
     }
@@ -160,6 +159,32 @@ local function aggregateSkillChoices(selectedFeatures, customFeatures, levelChoi
                 end
                 table.move(skillInfo, 1, #skillInfo, #skillChoices["features"] + 1, skillChoices["features"])
             end
+        end
+    end
+
+    return skillChoices
+end
+
+--- Aggregate all the skill choices selected for monsters
+--- @param creature creature
+--- @return table skillChoices The aggregated selections made
+local function aggregateSkillChoicesMonster(creature)
+    local skillChoices = {
+        features = {},
+    }
+
+    for key,item in pairs(dmhub.GetTableVisible(Skill.tableName)) do
+        if creature:HasSkillProficiency(item) then
+            local item = {
+                type = "choice",
+                guid = dmhub.GenerateGuid(),
+                name = "Skill Choice",
+                description = "You gain a skill choice.",
+                canDelete = true,
+                numChoices = 1,
+                selected = {key},
+            }
+            skillChoices.features[#skillChoices.features+1] = item
         end
     end
 
@@ -670,6 +695,61 @@ end
 --- @param token table The character token
 --- @param features table The features array from assembleSkillUpdates
 function CharacterSkillDialog.saveFeatures(token, features)
+    if token.properties:IsHero() then
+        CharacterSkillDialog.saveFeaturesHero(token, features)
+    else
+        CharacterSkillDialog.saveFeaturesMonster(token, features)
+    end
+end
+
+--- Save feature changes to a monster (or follower) token
+--- @param token table The character token
+--- @param features table The features array from assembleSkillUpdates
+function CharacterSkillDialog.saveFeaturesMonster(token, features)
+    local creature = token.properties
+
+    -- Figure out what the creature currently has
+    local currentSkills = {}
+    for k,v in pairs(dmhub.GetTable(Skill.tableName)) do
+        if creature:HasSkillProficiency(v) then
+            currentSkills[k] = true
+        end
+    end
+
+    -- Figure out what they should have
+    local selectedSkills = {}
+    for _,f in ipairs(features) do
+        for k,_ in pairs(f.skills) do
+            selectedSkills[k] = true
+        end
+    end
+
+    -- Reconcile the lists.
+    -- We need to delete every skill in current that is not in selected.
+    -- We need to add every skill in selected that is not in current.
+    for k,_ in pairs(currentSkills) do
+        if selectedSkills[k] then
+            selectedSkills[k] = nil
+        else
+            currentSkills[k] = nil
+        end
+    end
+
+    -- Delete the skills remaining in current
+    for k,_ in pairs(currentSkills) do
+        creature:SetSkillProficiency({id = k}, false)
+    end
+
+    -- Add the skills remaining in selected
+    for k,_ in pairs(selectedSkills) do
+        creature:SetSkillProficiency({id = k}, true)
+    end
+end
+
+--- Save feature changes to a hero token
+--- @param token table The character token
+--- @param features table The features array from assembleSkillUpdates
+function CharacterSkillDialog.saveFeaturesHero(token, features)
     local characterFeatures = token.properties:get_or_add("characterFeatures", {})
 
     -- Build lookup of existing features by guid for quick access
@@ -773,11 +853,17 @@ function CharacterSkillDialog.CreateAsChild(options)
     local token = CharacterSheet.instance and CharacterSheet.instance.data and CharacterSheet.instance.data.info.token
     if not token or not token.properties then return end
     if not token.properties:IsHero() and not token.properties:IsFollower() then return end
+    local creature = token.properties
 
-    local levelChoices = token.properties:GetLevelChoices()
-    local selectedFeatures = token.properties:IsHero() and token.properties:GetClassFeaturesAndChoicesWithDetails() or {}
-    local customFeatures = token.properties:try_get("characterFeatures", {})
-    local skillChoices = aggregateSkillChoices(selectedFeatures, customFeatures, levelChoices)
+    local skillChoices
+    if token.properties:IsHero() then
+        local levelChoices = token.properties:GetLevelChoices()
+        local selectedFeatures = token.properties:IsHero() and token.properties:GetClassFeaturesAndChoicesWithDetails() or {}
+        local customFeatures = token.properties:try_get("characterFeatures", {})
+        skillChoices = aggregateSkillChoicesHero(selectedFeatures, customFeatures, levelChoices)
+    else
+        skillChoices = aggregateSkillChoicesMonster(creature)
+    end
     local skills = loadSkills(token)
     addCompensatingFeatures(skillChoices, skills)
 
