@@ -1496,7 +1496,15 @@ CharacterPanel.CreateCharacterDetailsPanel = function(m_token)
 
             refreshToken = function(element)
                 local creature = m_token.properties
-                if creature:IsCompanion() then
+                if creature == nil then
+                    if m_token == nil then
+                        if CharacterSheet.instance and CharacterSheet.instance.data and CharacterSheet.instance.data.info then
+                            m_token = CharacterSheet.instance.data.info.token
+                        end
+                    end
+                    if m_token then creature = m_token.properties end
+                end
+                if creature and creature:IsCompanion() then
                     creature:DisplayCharacterPanel(m_token, element)
                 else
                     element:SetClass("collapsed", true)
