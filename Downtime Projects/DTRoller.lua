@@ -17,7 +17,8 @@ DTRoller.__index = DTRoller
 function DTRoller:new(object, mentorId)
     local instance = setmetatable({}, self)
 
-    local _object = DTRoller._validateConstructor(object)
+    local _object, foundMentorId = DTRoller._validateConstructor(object)
+    if foundMentorId == nil then foundMentorId = mentorId end
     if _object then
         local languages = DTBusinessRules.GetGlobalLanguages()
 
@@ -35,9 +36,9 @@ function DTRoller:new(object, mentorId)
                 end
             end
         elseif DTRoller._isFollowerType(_object) then
-            instance.mentorId = mentorId
+            instance.mentorId = foundMentorId
             instance._adjustRolls = function(self, amount)
-                self.object.properties:GrantRolls(amount)
+                self.object:GrantRolls(amount)
             end
         end
 
@@ -94,7 +95,7 @@ function DTRoller:GetTokenID()
             local token = dmhub.LookupToken(self.object)
             if token then return token.id end
         elseif DTRoller._isFollowerType(self.object) then
-            return self.object:try_get("mentorId")
+            return self:try_get("mentorId")
         end
     end
     return nil
@@ -104,7 +105,8 @@ end
 --- @return string|nil The follower Id
 function DTRoller:GetFollowerID()
     if self.object and DTRoller._isFollowerType(self.object) then
-        return self.object.id
+        local token = dmhub.LookupToken(self.object)
+        if token then return token.id end
     end
     return nil
 end
@@ -112,6 +114,7 @@ end
 --- Validates the constructor and returns an appropriate objec type therefrom
 --- @param object character|DTFollower|DTRoll The entity to abstract for the roll
 --- @return character|DTFollower|nil validatedObject The validated object
+--- @return string|nil mentorId
 function DTRoller._validateConstructor(object)
     if DTRoller._isCharacterType(object) or DTRoller._isFollowerType(object) then
         return object            
@@ -120,17 +123,13 @@ function DTRoller._validateConstructor(object)
     if DTRoller._isRollType(object) then
         local tokenId = object:GetRolledByID()
         if tokenId and #tokenId then
-            local token = dmhub.GetTokenById(tokenId)
+            local token = dmhub.GetCharacterById(tokenId)
             if token and token.properties and token.properties:IsHero() then
 
                 local followerId = object:GetRolledByFollowerID()
                 if followerId and #followerId then
-                    local followers = token.properties:GetDowntimeFollowers()
-                    if followers then
-                        return followers:GetFollower(followerId)
-                    else
-                        return nil
-                    end
+                    local follower = dmhub.GetCharacterById(followerId)
+                    if follower then return follower.properties, token.id end
                 end
 
                 return token.properties
@@ -182,7 +181,7 @@ end
 --- @return boolean isCharacterType
 function DTRoller._isCharacterType(object)
     local objType = string.lower(object.typeName or "")
-    return objType == "character" or objType == "follower"
+    return objType == "character"
 end
 
 --- Determines whether the object represents a follower type
@@ -190,7 +189,7 @@ end
 --- @return boolean isFollowerType 
 function DTRoller._isFollowerType(object)
     local objType = string.lower(object.typeName or "")
-    return objType == "dtfollower" or objType == "dtfollowerartisan" or objType == "dtfollowersage"
+    return objType == "follower"
 end
 
 --- Determine whether the object represents a roll type
