@@ -31,6 +31,13 @@ local function processChoiceSource(item)
     end
     if item.class then return "class" end
     if item.race then return "ancestry" end
+    if item.feat then
+        if item.feat.typeName == "CharacterComplication" then
+            return "complication"
+        else
+            return "perk"
+        end
+    end
     return nil
 end
 
@@ -754,8 +761,11 @@ function CharacterSkillDialog.CreateAsChild(options)
     if not token or not token.properties or not token.properties:IsHero() then return end
 
     local levelChoices = token.properties:GetLevelChoices()
+    print("THC:: LEVELCHOICES::", json(levelChoices))
     local selectedFeatures = token.properties:GetClassFeaturesAndChoicesWithDetails()
+    print("THC:: SELECTEDFEATURES::", json(selectedFeatures))
     local customFeatures = token.properties:try_get("characterFeatures", {})
+    print("THC:: CUSTOMFEATURES::", json(customFeatures))
     local skillChoices = aggregateSkillChoices(selectedFeatures, customFeatures, levelChoices)
     local skills = loadSkills()
     addCompensatingFeatures(skillChoices, skills)
@@ -853,6 +863,7 @@ function CharacterSkillDialog.CreateAsChild(options)
         classes = {"skilldlg-button", "skilldlg-base"},
         width = "auto",
         halign = "left",
+        valign = "top",
         tmargin = 12,
         hpad = 20,
         vpad = 4,
