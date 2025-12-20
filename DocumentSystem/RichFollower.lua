@@ -283,7 +283,7 @@ function RichFollower.CreateDisplay(self)
         },
         classes = {"follower-panel"},
         flow = "vertical",
-        width = "100%",
+        width = "80%",
         height = "auto",
         pad = 2,
         halign = "left",

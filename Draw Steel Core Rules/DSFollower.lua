@@ -221,8 +221,8 @@ function DescribeFollower(follower)
         return "?"
     end
 
-    local type = follower.type
-    local s = string.format("<b>%s Follower</b>", string.upper_first(type))
+    local followerType = follower.type
+    local s = string.format("<b>%s Follower</b>", string.upper_first(followerType))
 
     if follower.type == "artisan" or follower.type == "sage" then
         if follower.ancestry then
@@ -285,7 +285,7 @@ function DescribeFollower(follower)
     end
 
     local atl = ""
-    if follower and follower.assignedTo and follower.assignedTo ~= "" then
+    if follower and follower:try_get("assignedTo") and type(follower.assignedTo) == "string" and follower.assignedTo ~= "" then
         local token = dmhub.GetTokenById(follower.assignedTo)
     
         if token then
