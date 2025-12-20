@@ -4,6 +4,7 @@
 
 local _fireControllerEvent = CharacterBuilder._fireControllerEvent
 local _getCreature = CharacterBuilder._getCreature
+local _getState = CharacterBuilder._getState
 local _getToken = CharacterBuilder._getToken
 
 --- Creates a panel of selectable item buttons that expands when its selector is active.
@@ -25,11 +26,11 @@ function CharacterBuilder._createDetailedSelectorPanel(config)
             text = item.name,
             data = { id = item.id },
             available = true,
-            
+
             create = function(element)
-                element:FireEvent("refreshToken")
+                element:FireEvent("refreshBuilderState", _getState(element))
             end,
-            
+
             click = function(element)
                 local newState = {
                     { key = config.selectorName .. ".selectedId", value = element.data.id }
