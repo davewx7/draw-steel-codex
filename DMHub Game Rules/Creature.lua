@@ -9889,7 +9889,7 @@ function creature:Repair(localOnly)
 				self:AddFollowerToMentor(followerToken)
 				-- Remove the old entry
 				self.followers[i] = nil
-			else
+            elseif rawget(k, "type") ~= nil then
 				-- No valid token found, attempt to create a follower token
 				local opts = { open = false }
 				if tok == nil then
@@ -9907,6 +9907,9 @@ function creature:Repair(localOnly)
 					CreateFollowerMonster(k, k.type, tok, opts)
 				end
 				self.followers[i] = nil
+            else
+                --unrecognized follower entry, just remove it.
+                self.followers[i] = nil
 			end
 		end
 	end
