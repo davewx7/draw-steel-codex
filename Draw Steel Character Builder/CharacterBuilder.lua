@@ -54,6 +54,17 @@ function CharacterBuilder._blankToDashes(s)
     return s
 end
 
+--- Return the count of items in a keyed table
+--- @param t table
+--- @return integer numItems
+function CharacterBuilder._countKeyedTable(t)
+    local numItems = 0
+    for _ in pairs(t) do
+        numItems = numItems + 1
+    end
+    return numItems
+end
+
 --- Fires an event on the main builder panel
 --- @param element Panel The element calling this method
 --- @param eventName string
@@ -80,9 +91,15 @@ function CharacterBuilder._getController(element)
 end
 
 --- Returns the creature (character) we're working on
+--- @param source CharacterBuilderState|Panel
 --- @return creature|nil
-function CharacterBuilder._getCreature(element)
-    local token = CharacterBuilder._getToken(element)
+function CharacterBuilder._getCreature(source)
+    local token
+    if source.typeName == "CharacterBuilderState" then
+        token = source:Get("token")
+    else
+        token = CharacterBuilder._getToken(source)
+    end
     if token then return token.properties end
     return nil
 end

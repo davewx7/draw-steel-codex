@@ -52,7 +52,7 @@ function CharacterBuilder._descriptionEdit()
         inputConfig.editlag = 0.5
 
         inputConfig.refreshBuilderState = function(element, state)
-            local character = state:Get("token").properties
+            local character = _getCreature(state)
             if character then
                 local desc = character:Description()
                 if desc then
@@ -132,7 +132,7 @@ function CharacterBuilder._descriptionEdit()
         },
 
         refreshBuilderState = function(element, state)
-            local creature = state:Get("token").properties
+            local creature = _getCreature(state)
             if creature then
                 local level = creature:CharacterLevel()
                 if level == 1 then

@@ -5,7 +5,6 @@
 local _fireControllerEvent = CharacterBuilder._fireControllerEvent
 local _getCreature = CharacterBuilder._getCreature
 local _getState = CharacterBuilder._getState
-local _getToken = CharacterBuilder._getToken
 
 --- Creates a panel of selectable item buttons that expands when its selector is active.
 --- Items must have `id` and `name` fields.
@@ -52,7 +51,7 @@ function CharacterBuilder._createDetailedSelectorPanel(config)
             end,
 
             refreshBuilderState = function(element, state)
-                local creature = state:Get("token").properties
+                local creature = _getCreature(state)
                 if creature then
                     local tokenSelected = config.getSelected(creature)
                     -- print(string.format("THC:: SEL:: RBS:: T:: %s ID:: %s", tokenSelected, element.data.id))
@@ -309,7 +308,7 @@ function CharacterBuilder._kitSelector()
         text = "Kit",
         data = { selector = "kit" },
         refreshBuilderState = function(element, state)
-            local c = state:Get("token").properties
+            local c = _getCreature(state)
             element:SetClass("collapsed", not c or not c:IsHero() or not c:CanHaveKits() )
         end,
     }

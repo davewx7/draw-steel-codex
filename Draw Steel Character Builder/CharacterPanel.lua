@@ -6,6 +6,7 @@ local mod = dmhub.GetModLoading()
 
 local _blankToDashes = CharacterBuilder._blankToDashes
 local _fireControllerEvent = CharacterBuilder._fireControllerEvent
+local _getCreature = CharacterBuilder._getCreature
 local _getState = CharacterBuilder._getState
 local _getToken = CharacterBuilder._getToken
 local _ucFirst = CharacterBuilder._ucFirst
@@ -230,7 +231,7 @@ function CharacterBuilder._characterBuilderPanelStatusItem(selector, getSelected
                     selectedDetail = {},
                 },
             }
-            local character = state:Get("token").properties
+            local character = _getCreature(state)
             local featureDetails = state:Get(selector .. ".featureDetails")
             if character and featureDetails then
                 local selectedItem = getSelected(character)
@@ -398,7 +399,7 @@ function CharacterBuilder._descriptorsPanel()
 
     local weight = makeDescriptionLabel("Weight", {
         refreshBuilderState = function(element, state)
-            local character = state:Get("token").properties
+            local character = _getCreature(state)
             if character and character:IsHero() then
                 local desc = character:Description()
                 if desc then element.text = _blankToDashes(desc:GetWeight()) end
@@ -407,7 +408,7 @@ function CharacterBuilder._descriptorsPanel()
     })
     local height = makeDescriptionLabel("Height", {
         refreshBuilderState = function(element, state)
-            local character = state:Get("token").properties
+            local character = _getCreature(state)
             if character and character:IsHero() then
                 local desc = character:Description()
                 if desc then element.text = _blankToDashes(desc:GetHeight()) end
@@ -416,7 +417,7 @@ function CharacterBuilder._descriptorsPanel()
     })
     local hair = makeDescriptionLabel("Hair", {
         refreshBuilderState = function(element, state)
-            local character = state:Get("token").properties
+            local character = _getCreature(state)
             if character and character:IsHero() then
                 local desc = character:Description()
                 if desc then element.text = _blankToDashes(desc:GetHair()) end
@@ -425,7 +426,7 @@ function CharacterBuilder._descriptorsPanel()
     })
     local eyes = makeDescriptionLabel("Eyes", {
         refreshBuilderState = function(element, state)
-            local character = state:Get("token").properties
+            local character = _getCreature(state)
             if character and character:IsHero() then
                 local desc = character:Description()
                 if desc then element.text = _blankToDashes(desc:GetEyes()) end
@@ -434,7 +435,7 @@ function CharacterBuilder._descriptorsPanel()
     })
     local build = makeDescriptionLabel("Build", {
         refreshBuilderState = function(element, state)
-            local character = state:Get("token").properties
+            local character = _getCreature(state)
             if character and character:IsHero() then
                 local desc = character:Description()
                 if desc then element.text = _blankToDashes(desc:GetBuild()) end
@@ -443,7 +444,7 @@ function CharacterBuilder._descriptorsPanel()
     })
     local skin = makeDescriptionLabel("Skin", {
         refreshBuilderState = function(element, state)
-            local character = state:Get("token").properties
+            local character = _getCreature(state)
             if character and character:IsHero() then
                 local desc = character:Description()
                 if desc then element.text = _blankToDashes(desc:GetSkinTone()) end
@@ -452,7 +453,7 @@ function CharacterBuilder._descriptorsPanel()
     })
     local gender = makeDescriptionLabel("Gender", {
         refreshBuilderState = function(element, state)
-            local character = state:Get("token").properties
+            local character = _getCreature(state)
             if character and character:IsHero() then
                 local desc = character:Description()
                 if desc then element.text = _blankToDashes(desc:GetGenderPresentation()) end
@@ -461,7 +462,7 @@ function CharacterBuilder._descriptorsPanel()
     })
     local pronouns = makeDescriptionLabel("Pronouns", {
         refreshBuilderState = function(element, state)
-            local character = state:Get("token").properties
+            local character = _getCreature(state)
             if character and character:IsHero() then
                 local desc = character:Description()
                 if desc then element.text = _blankToDashes(desc:GetPronouns()) end
@@ -546,7 +547,7 @@ function CharacterBuilder._characterDescriptionPanel(tabId)
             border = 1,
             borderColor = "purple",
             refreshBuilderState = function(element, state)
-                local character = state:Get("token").properties
+                local character = _getCreature(state)
                 if character and character:IsHero() then
                     local desc = character:Description()
                     if desc then element.text = _blankToDashes(desc:GetPhysicalFeatures()) end
@@ -605,7 +606,7 @@ function CharacterBuilder._characterExplorationPanel(tabId)
             text = "calculating...",
 
             refreshBuilderState = function(element, state)
-                local creature = state:Get("token").properties
+                local creature = _getCreature(state)
                 if creature then
                     local catSkills = creature:GetCategorizedSkills()
                     if catSkills then
@@ -661,7 +662,7 @@ function CharacterBuilder._characterExplorationPanel(tabId)
             text = "calculating...",
 
             refreshBuilderState = function(element, state)
-                local creature = state:Get("token").properties
+                local creature = _getCreature(state)
                 if creature then
                     local knownLangs = {}
                     local langs = creature:LanguagesKnown()
@@ -987,7 +988,7 @@ function CharacterBuilder._characterHeaderPanel()
         text = "(class & level)",
         tmargin = 4,
         refreshBuilderState = function(element, state)
-            local c = state:Get("token").properties
+            local c = _getCreature(state)
             if c and c:IsHero() then
                 local class = c:GetClass()
                 local level = c:CharacterLevel()

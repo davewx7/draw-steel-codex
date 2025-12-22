@@ -56,7 +56,7 @@ function CharacterBuilder._ancestryNavPanel()
             end
         end,
         refreshBuilderState = function(element, state)
-            local creature = state:Get("token").properties
+            local creature = _getCreature(state)
             if creature then
                 element:FireEvent("setAvailable", creature:try_get("raceid") ~= nil)
             end
@@ -334,7 +334,7 @@ function CharacterBuilder._featureSkillChoicePanel(feature)
             refreshBuilderState = function(element, state)
                 element.data.selectedItem = nil
                 element.text = "Empty Slot"
-                local creature = state:Get("token").properties
+                local creature = _getCreature(state)
                 if creature then
                     local levelChoices = creature:GetLevelChoices()
                     if levelChoices then
@@ -382,7 +382,7 @@ function CharacterBuilder._featureSkillChoicePanel(feature)
                 end
             end,
             refreshBuilderState = function(element, state)
-                local creature = state:Get("token").properties
+                local creature = _getCreature(state)
                 if creature then
                     element:SetClass("collapsed", creature:ProficientInSkill(element.data.item))
                 end
@@ -448,7 +448,7 @@ function CharacterBuilder._featureSkillChoicePanel(feature)
         end,
 
         refreshBuilderState = function(element, state)
-            local creature = state:Get("token").properties
+            local creature = _getCreature(state)
         end,
 
         selectItem = function(element, itemId)
@@ -512,7 +512,7 @@ function CharacterBuilder._featureRegistry(feature, selectorId, selectedId, getS
                     })
                 end,
                 refreshBuilderState = function(element, state)
-                    local tokenSelected = getSelected(state:Get("token").properties) or "nil"
+                    local tokenSelected = getSelected(_getCreature(state)) or "nil"
                     local isVisible = tokenSelected == element.data.selectedId
                     element:FireEvent("setAvailable", isVisible)
                     element:FireEvent("setSelected", element.data.featureId == state:Get(selectorId .. ".category.selectedId"))
@@ -552,7 +552,7 @@ function CharacterBuilder._ancestrySelectButton()
             _fireControllerEvent(element, "applyCurrentAncestry")
         end,
         refreshBuilderState = function(element, state)
-            local creature = state:Get("token").properties
+            local creature = _getCreature(state)
             if creature then
                 local canSelect = creature:try_get("raceid") == nil and state:Get(SELECTOR .. ".selectedId") ~= nil
                 element:SetClass("collapsed", not canSelect)
@@ -610,7 +610,7 @@ function CharacterBuilder._ancestryDetail()
             local visible = state:Get("activeSelector") == element.data.selector
             element:SetClass("collapsed", not visible)
             if visible then
-                local creature = state:Get("token").properties
+                local creature = _getCreature(state)
                 if creature then
                     local creatureAncestry = creature:try_get("raceid")
 

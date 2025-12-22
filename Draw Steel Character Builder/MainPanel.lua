@@ -5,6 +5,8 @@ local mod = dmhub.GetModLoading()
     ... plus some other WIP that will eventually move out
 ]]
 
+local _getCreature = CharacterBuilder._getCreature
+
 --- Minimal implementation for the center panel. Non-reactive.
 function CharacterBuilder._detailPanel()
     local detailPanel
@@ -79,7 +81,7 @@ function CharacterBuilder.CreatePanel()
         end,
 
         applyLevelChoice = function(element, info)
-            local creature = element.data.state:Get("token").properties
+            local creature = _getCreature(element.data.state)
             if creature then
                 local levelChoices = creature:GetLevelChoices()
                 if levelChoices then
@@ -118,7 +120,7 @@ function CharacterBuilder.CreatePanel()
         end,
 
         deleteSkill = function(element, info)
-            local creature = element.data.state:Get("token").properties
+            local creature = _getCreature(element.data.state)
             if creature then
                 local levelChoices = creature:GetLevelChoices()
                 if levelChoices then
