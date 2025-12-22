@@ -94,12 +94,7 @@ end
 --- @param source CharacterBuilderState|Panel
 --- @return creature|nil
 function CharacterBuilder._getCreature(source)
-    local token
-    if source.typeName == "CharacterBuilderState" then
-        token = source:Get("token")
-    else
-        token = CharacterBuilder._getToken(source)
-    end
+    local token = CharacterBuilder._getToken(source)
     if token then return token.properties end
     return nil
 end
@@ -113,9 +108,13 @@ function CharacterBuilder._getState(element)
 end
 
 --- Returns the character token we are working with or nil if we can't get to it
+--- @param source CharacterBuilderState|Panel
 --- @return LuaCharacterToken|nil
-function CharacterBuilder._getToken(element)
-    local state = CharacterBuilder._getState(element)
+function CharacterBuilder._getToken(source)
+    if source.typeName == "CharacterBuilderState" then
+        return source:Get("token")
+    end
+    local state = CharacterBuilder._getState(source)
     if state then return state:Get("token") end
     return nil
 end

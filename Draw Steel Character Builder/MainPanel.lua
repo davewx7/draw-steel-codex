@@ -32,7 +32,7 @@ function CharacterBuilder.CreatePanel()
 
     local selectorsPanel = CharacterBuilder._selectorsPanel()
     local detailPanel = CharacterBuilder._detailPanel()
-    local characterPanel = CharacterBuilder._characterPanel()
+    local characterPanel = CBCharPanel.CreatePanel()
 
     return gui.Panel{
         id = CharacterBuilder.CONTROLLER_CLASS,
@@ -152,10 +152,17 @@ function CharacterBuilder.CreatePanel()
             end
 
             if token then
-                local ancestryId = token.properties:try_get("raceid")
+                local creature = token.properties
+                local ancestryId = creature:try_get("raceid")
                 if ancestryId and ancestryId ~= element.data.state:Get("ancestry.selectedId") then
                     element:FireEvent("selectAncestry", ancestryId, true)
                 end
+
+                local careerItem = creature:Background()
+                if careerItem and careerItem.id ~= element.data.state:Get("career.selectedId") then
+                    element:FireEvent("selectCareer", careerItem.id, true)
+                end
+
                 element:FireEventTree("refreshBuilderState", element.data.state)
             end
         end,
@@ -171,6 +178,25 @@ function CharacterBuilder.CreatePanel()
                     ancestryItem:FillFeatureDetails(nil, {}, featureDetails)
                     state[#state+1] = { key = "ancestry.selectedItem", value = ancestryItem }
                     state[#state+1] = { key = "ancestry.featureDetails", value = featureDetails }
+                end
+                element.data.state:Set(state)
+                if not noFire then
+                    element:FireEventTree("refreshBuilderState", element.data.state)
+                end
+            end
+        end,
+
+        selectCareer = function(element, careerId, noFire)
+            if careerId ~= element.data.state:Get("career.selectedId") then
+                local state = {
+                    { key = "career.selectedId", value = careerId },
+                }
+                local careerItem = dmhub.GetTableVisible(Background.tableName)[careerId]
+                if careerItem then
+                    local featureDetails = {}
+                    careerItem:FillFeatureDetails({}, featureDetails)
+                    state[#state+1] = { key = "career.selectedItem", value = careerItem }
+                    state[#state+1] = { key = "career.featureDetails", value = featureDetails }
                 end
                 element.data.state:Set(state)
                 if not noFire then

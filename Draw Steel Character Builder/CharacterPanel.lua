@@ -13,78 +13,45 @@ local _ucFirst = CharacterBuilder._ucFirst
 
 local INITIAL_TAB = "description"
 
-local function processFeature(feature)
+--- Character Panel Class
+CBCharPanel = {}
 
-    local modifiers = feature:try_get("modifiers")
-    if modifiers then
-        local choiceInfo = {}
-        for _,item in ipairs(modifiers) do
-            if item.typeName and item.typeName == "CharacterModifier" then
-                
-            end
+--- Get the item table for a feature based on its type
+--- @param feature table The feature object
+--- @return table|nil The visible item table, or nil if no table exists for this feature type
+function CBCharPanel._getFeatureChoices(feature)
+    if not feature or not feature.typeName then return nil end
+
+    if feature.typeName == "CharacterDeityChoice" then
+        return dmhub.GetTableVisible(Deity.tableName)
+    elseif feature.typeName == "CharacterFeatChoice" then
+        return dmhub.GetTableVisible(CharacterFeat.tableName)
+    elseif feature.typeName == "CharacterFeatureChoice" then
+        local items = {}
+        for _,item in ipairs(feature.options) do
+            local newItem = {
+                id = item.guid,
+                name = item.name,
+                pointCost = item:try_get("pointCost"),
+            }
+            items[item.guid] = newItem
         end
+        return items
+    elseif feature.typeName == "CharacterLanguageChoice" then
+        return dmhub.GetTableVisible(Language.tableName)
+    elseif feature.typeName == "CharacterSkillChoice" then
+        return dmhub.GetTableVisible(Skill.tableName)
+    elseif feature.typeName == "CharacterSubclassChoice" then
+        return dmhub.GetTableVisible(Class.tableName)
     end
 
     return nil
-end
-
-local function processChoice(feature, levelChoices)
-
-    local function translateTypeName(typeName)
-        local s = typeName:match("Character(.+)Choice")
-    end
-
-    local guid = feature:try_get("guid")
-    if guid then
-        local selected = levelChoices[guid]
-        return {{
-            guid = guid,
-            type = translateTypeName(feature.typeName),
-            numChoices = feature:try_get("numChoices", 1),
-            numSelected = selected and #selected or 0
-        }}
-    end
-
-    return nil
-end
-
-local function aggregateBuilderChoices(creature)
-    local choices = {}
-
-    local function typeNameIsChoice(typeName)
-        return typeName == "CharacterDeityChoice"
-            or typeName == "CharacterFeatChoice"
-            or typeName == "CharacterFeatureChoice"
-            or typeName == "CharacterLanguageChoice"
-            or typeName == "CharacterSkillChoice"
-            or typeName == "CharacterSubclassChoice"
-    end
-
-    if creature then
-        local levelChoices = creature:GetLevelChoices()
-        local selectedFeatures = creature:GetClassFeaturesAndChoicesWithDetails()
-
-        for _,item in ipairs(selectedFeatures) do
-            local typeName = item.feature and item.feature.typeName
-            if typeName then
-                local choiceInfo
-                if typeNameIsChoice(typeName) then
-                    choiceInfo = processChoice(item.feature, levelChoices)
-                elseif typeName == "CharacterFeatureList" then
-                    -- iterate over feature.features #39
-                elseif typeName == "CharacterFeature" then
-                end
-            end
-        end
-    end
-
-    return choices
 end
 
 --- Create a panel displaying feature information for a single feature type
 --- @param featureTypeInfo table
 --- @return Panel
-function CharacterBuilder._characterBuilderPanelStatusFeature(featureTypeInfo)
+function CBCharPanel._statusFeature(featureTypeInfo)
     local idLabel = gui.Label{
         classes = {"builder-base", "label", "feature-detail-id-label"},
         refreshDetail = function(element, info)
@@ -100,7 +67,7 @@ function CharacterBuilder._characterBuilderPanelStatusFeature(featureTypeInfo)
     local detailLabel = gui.Label{
         classes = {"builder-base", "label", "feature-detail-detail-label"},
         refreshDetail = function(element, info)
-            element.text = table.concat(info.selectedDetail, "\n\n")
+            element.text = table.concat(info.selectedDetail, "\n")
         end
     }
     return gui.Panel{
@@ -123,7 +90,7 @@ end
 --- @param selector string The primary selector for querying state
 --- @param getSelected function(character) Return the selected item on the character
 --- @return Panel
-function CharacterBuilder._characterBuilderPanelStatusItem(selector, getSelected)
+function CBCharPanel._statusItem(selector, getSelected)
 
     local function translateTypeName(typeName)
         local s = typeName:match("Character(.+)Choice")
@@ -143,15 +110,6 @@ function CharacterBuilder._characterBuilderPanelStatusItem(selector, getSelected
         -- The input is translated
         local typeOrders = { Subclass = 1, Feature = 2, Skill = 3, Language = 4, Feat = 5, Deity = 6, }
         return string.format("%d-%s", typeOrders[typeName] or 9, typeName)
-    end
-
-    local function typeNameToTableName(typeName)
-        if typeName == "CharacterDeityChoice" then return Deity.tableName end
-        if typeName == "CharacterFeatChoice" then return CharacterFeat.tableName end
-        if typeName == "CharacterFeatureChoice" then return nil end
-        if typeName == "CharacterLanguageChoice" then return Language.tableName end
-        if typeName == "CharacterSkillChoice" then return Skill.tableName end
-        if typeName == "CharacterSubclassChoice" then return Class.tableName end
     end
 
     local headingText = _ucFirst(selector)
@@ -263,7 +221,7 @@ function CharacterBuilder._characterBuilderPanelStatusItem(selector, getSelected
                                     featureTypes[typeName].selected = featureTypes[typeName].selected + #levelChoices[guid]
 
                                     local detail = {}
-                                    local itemTable = dmhub.GetTableVisible(typeNameToTableName(f.feature.typeName))
+                                    local itemTable = CBCharPanel._getFeatureChoices(f.feature)
                                     if itemTable then
                                         for _,id in ipairs(levelChoices[guid]) do
                                             local item = itemTable[id]
@@ -294,7 +252,7 @@ function CharacterBuilder._characterBuilderPanelStatusItem(selector, getSelected
                     if children[index] then
                         children[index].data = featureType
                     else
-                        children[index] = CharacterBuilder._characterBuilderPanelStatusFeature(featureType)
+                        children[index] = CBCharPanel._statusFeature(featureType)
                     end
                 end
 
@@ -343,10 +301,14 @@ function CharacterBuilder._characterBuilderPanelStatusItem(selector, getSelected
     }
 end
 
-function CharacterBuilder._characterBuilderPanel(tabId)
+function CBCharPanel._builderPanel(tabId)
 
-    local ancestryStatusItem = CharacterBuilder._characterBuilderPanelStatusItem("ancestry", function(character)
+    local ancestryStatusItem = CBCharPanel._statusItem("ancestry", function(character)
         return character:Race()
+    end)
+
+    local careerStatusItem = CBCharPanel._statusItem("career", function(character)
+        return character:Background()
     end)
     return gui.Panel {
         classes = {"builder-base", "panel-base", "panel-charpanel-detail"},
@@ -363,10 +325,11 @@ function CharacterBuilder._characterBuilderPanel(tabId)
         end,
 
         ancestryStatusItem,
+        careerStatusItem,
     }
 end
 
-function CharacterBuilder._descriptorsPanel()
+function CBCharPanel._descriptorsPanel()
 
     local function makeDescriptionLabel(labelText, eventHandlers)
         local itemConfig = {
@@ -516,9 +479,9 @@ function CharacterBuilder._descriptorsPanel()
     }
 end
 
-function CharacterBuilder._characterDescriptionPanel(tabId)
+function CBCharPanel._descriptionPanel(tabId)
 
-    local descriptorsPanel = CharacterBuilder._descriptorsPanel()
+    local descriptorsPanel = CBCharPanel._descriptorsPanel()
 
     local physicalFeaturesPanel = gui.Panel{
         classes = {"panel-base"},
@@ -575,7 +538,7 @@ function CharacterBuilder._characterDescriptionPanel(tabId)
     }
 end
 
-function CharacterBuilder._characterExplorationPanel(tabId)
+function CBCharPanel._explorationPanel(tabId)
 
     local skillsPane = gui.Panel{
         classes = {"panel-base"},
@@ -704,7 +667,7 @@ function CharacterBuilder._characterExplorationPanel(tabId)
     }
 end
 
-function CharacterBuilder._characterTacticalPanel(tabId)
+function CBCharPanel._tacticalPanel(tabId)
     return gui.Panel {
         classes = {"builder-base", "panel-base", "panel-charpanel-detail"},
         vscroll = true,
@@ -745,7 +708,7 @@ end
 
 --- Create the tabbed detail panel for the character pane
 --- @return Panel
-function CharacterBuilder._characterDetailPanel()
+function CBCharPanel._detailPanel()
 
     local detailPanel
 
@@ -753,22 +716,22 @@ function CharacterBuilder._characterDetailPanel()
         builder = {
             icon = "panels/gamescreen/settings.png",
             text = "Builder",
-            content = CharacterBuilder._characterBuilderPanel,
+            content = CBCharPanel._builderPanel,
         },
         description = {
             icon = "icons/icon_app/icon_app_31.png",
             text = "Description",
-            content = CharacterBuilder._characterDescriptionPanel,
+            content = CBCharPanel._descriptionPanel,
         },
         exploration = {
             icon = "game-icons/treasure-map.png",
             text = "Exploration",
-            content = CharacterBuilder._characterExplorationPanel,
+            content = CBCharPanel._explorationPanel,
         },
         tactical = {
             icon = "panels/initiative/initiative-icon.png",
             text = "Tactical",
-            content = CharacterBuilder._characterTacticalPanel,
+            content = CBCharPanel._tacticalPanel,
         }
     }
     local tabOrder = {"description", "builder", "exploration", "tactical"}
@@ -880,7 +843,7 @@ end
 
 --- Create the header panel for the character pane
 --- @return Panel
-function CharacterBuilder._characterHeaderPanel()
+function CBCharPanel._headerPanel()
 
     local popoutAvatar = gui.Panel {
         classes = { "hidden" },
@@ -1014,10 +977,10 @@ end
 
 --- Generate the character panel
 --- @return Panel
-function CharacterBuilder._characterPanel()
+function CBCharPanel.CreatePanel()
 
-    local headerPanel = CharacterBuilder._characterHeaderPanel()
-    local detailPanel = CharacterBuilder._characterDetailPanel()
+    local headerPanel = CBCharPanel._headerPanel()
+    local detailPanel = CBCharPanel._detailPanel()
 
     return gui.Panel{
         id = "characterPanel",

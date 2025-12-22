@@ -129,6 +129,16 @@ function CharacterBuilder._panelStyles()
         },
 
         -- For the right side character pane
+        { 
+            selectors = {"charpanel-check"},
+            halign = "left",
+            valign = "center",
+            hmargin = 150,
+            width = 24,
+            height = 24,
+            bgimage = "icons/icon_common/icon_common_29.png",
+            bgcolor = "clear",
+        },
         {
             selectors = {"charpanel-detail-header"},
             width = "100%",
@@ -300,16 +310,6 @@ function CharacterBuilder._labelStyles()
             borderColor = Styles.textColor,
         },
         {
-            selectors = {"charpanel-check"},
-            halign = "left",
-            valign = "center",
-            hmargin = 150,
-            width = 24,
-            height = 24,
-            bgimage = "icons/icon_common/icon_common_29.png",
-            bgcolor = "clear",
-        },
-        {
             selectors = {"charpanel-check", "complete"},
             bgcolor = Styles.textColor,
         },
@@ -317,21 +317,25 @@ function CharacterBuilder._labelStyles()
             selectors = {"feature-detail-id-label"},
             width = "20%",
             halign = "left",
-            textAlignment = "left",
+            valign = "top",
+            textAlignment = "topleft",
             fontSize = 18,
         },
         {
             selectors = {"feature-detail-status-label"},
             width = "15%",
+            valign = "top",
+            textAlignment = "topleft",
             hmargin = 2,
             fontSize = 18,
         },
         {
             selectors = {"feature-detail-detail-label"},
             width = "60%",
-            halign= "left",
+            halign = "left",
+            valign = "top",
             hmargin = 2,
-            textAlignment = "left",
+            textAlignment = "topleft",
             fontSize = 18,
         },
     }
