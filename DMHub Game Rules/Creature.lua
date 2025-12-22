@@ -9710,16 +9710,17 @@ function creature:IsValid()
 		return false
 	end
 
-	if self:try_get("retainerToken") then
-		return false
+	-- TODO: Remove at early access
+	for i, k in pairs(self:GetFollowers()) do
+		if k ~= true then
+			return false
+		end
 	end
 
 	return true
 end
 
 function creature:Repair(localOnly)
-
-
 	local tok = nil
 	local charid = "none"
 	if not localOnly then
@@ -9875,11 +9876,39 @@ function creature:Repair(localOnly)
 		self.complicationid = nil
 	end
 
-	if self:try_get("retainerToken") then
-		if self.retainerToken ~= "" then
-			self.followerToken = self.retainerToken
+	-- TODO: Remove at early access
+	for i, k in pairs(self:GetFollowers()) do
+		if k ~= true then
+			local followerToken = k.followerToken
+			if followerToken == nil then
+				followerToken = k.retainerToken
+			end
+
+			if followerToken and followerToken ~= "none" then
+				-- Add the follower using the new structure
+				self:AddFollowerToMentor(followerToken)
+				-- Remove the old entry
+				self.followers[i] = nil
+			else
+				-- No valid token found, attempt to create a follower token
+				local opts = { open = false }
+				if tok == nil then
+					tok = dmhub.LookupToken(self)
+					if tok then
+						tok:ModifyProperties{
+							description = "Translate followers",
+							undoable = false,
+							execute = function()
+								CreateFollowerMonster(k, k.type, tok, opts)
+							end,
+						}
+					end
+				else
+					CreateFollowerMonster(k, k.type, tok, opts)
+				end
+				self.followers[i] = nil
+			end
 		end
-		self.retainerToken = nil
 	end
 
 	if tok ~= nil then

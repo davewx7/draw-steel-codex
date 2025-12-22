@@ -56,7 +56,8 @@ function DTCharSheetTab.CreateDowntimePanel()
                 local t = dmhub.GetTokenById(rollerTokenId)
                 if t then
                     t:ModifyProperties{
-                        description = "Adjust roll count",
+                        description = "Adjust available rolls",
+                        undoable = false,
                         execute = function ()
                             roller:AdjustRolls(amount)
                         end

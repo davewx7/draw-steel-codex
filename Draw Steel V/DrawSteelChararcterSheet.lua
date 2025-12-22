@@ -1280,7 +1280,6 @@ function CharSheet.CharacterSheetAndAvatarPanel()
                 },
                 refreshToken = function(element, info)
                     local c = info.token.properties
-                    print("Follower::", c:try_get("followerType"))
                     if not c:IsMonster() then
                         return
                     end

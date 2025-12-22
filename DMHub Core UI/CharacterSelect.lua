@@ -83,97 +83,72 @@ local function _characterSelector(args)
         return sorted
     end
 
-    local function buildTokenPanels()
-        local initiallySelected = {}
-        if initialSelection then
-            for tokenId, value in pairs(initialSelection) do
-                if type(value) == "table" and value.selected then
-                    initiallySelected[tokenId] = true
-                end
+    local initiallySelected = {}
+    if initialSelection then
+        for tokenId, value in pairs(initialSelection) do
+            if type(value) == "table" and value.selected then
+                initiallySelected[tokenId] = true
             end
         end
+    end
+
+    local function buildTokenPanel(token, mentor)
+        local isSelected = initiallySelected[token.id] == true
+        local description = fnDisplayText and fnDisplayText(token) or (token.name or "Unknown")
+        return gui.Panel{
+            bgimage = "panels/square.png",
+            classes = {"token-panel", isSelected and "selected" or nil},
+            data = {
+                token = mentor or token,
+                follower = mentor and token or nil,
+            },
+            flow = layoutList and "horizontal" or nil,
+            children = {
+                gui.CreateTokenImage(token, {
+                    width = tokenSize,
+                    height = tokenSize,
+                    halign = "center",
+                    valign = "center",
+                    lmargin = mentor and 32 or nil,
+                    refresh = function(element)
+                        if token == nil or not token.valid then return end
+                        element:FireEventTree("token", token)
+                    end,
+                }),
+                layoutList and gui.Label{
+                    text = description,
+                    classes = {"token-name-label"},
+                    valign = "center",
+                    hmargin = 8,
+                } or nil,
+            },
+            linger = function(element)
+                gui.Tooltip(description)(element)
+            end,
+            press = function(element)
+                element:SetClass("selected", not element:HasClass("selected"))
+                local controller = element:FindParentWithClass("characterSelectorController")
+                if controller then
+                    controller:FireEvent("updateSelection")
+                end
+            end,
+        }
+    end
+
+    local function buildTokenPanels()
 
         local sortedTokens = sortTokensBySelection(m_allTokens, initiallySelected)
 
         local panels = {}
         for _, token in ipairs(sortedTokens) do
-            local isSelected = initiallySelected[token.id] == true
-            local description = fnDisplayText and fnDisplayText(token) or (token.name or "Unknown")
-            panels[#panels + 1] = gui.Panel{
-                bgimage = "panels/square.png",
-                classes = {"token-panel", isSelected and "selected" or nil},
-                data = {
-                    token = token,
-                },
-                flow = layoutList and "horizontal" or nil,
-                children = {
-                    gui.CreateTokenImage(token, {
-                        width = tokenSize,
-                        height = tokenSize,
-                        halign = "center",
-                        valign = "center",
-                        refresh = function(element)
-                            if token == nil or not token.valid then return end
-                            element:FireEventTree("token", token)
-                        end,
-                    }),
-                    layoutList and gui.Label{
-                        text = description,
-                        classes = {"token-name-label"},
-                        valign = "center",
-                        hmargin = 8,
-                    } or nil,
-                },
-                linger = function(element)
-                    gui.Tooltip(description)(element)
-                end,
-                press = function(element)
-                    element:SetClass("selected", not element:HasClass("selected"))
-                    local controller = element:FindParentWithClass("characterSelectorController")
-                    if controller then
-                        controller:FireEvent("updateSelection")
-                    end
-                end,
-            }
+            panels[#panels + 1] = buildTokenPanel(token)
 
             if includeFollowers then
                 local followers = token.properties:try_get("followers") or {}
-                for _, follower in ipairs(followers) do
-                    if fnFollowerFilter == nil or fnFollowerFilter(follower) then
-                        description = fnFollowerText and fnFollowerText(follower) or follower.name
-                        local portraitId = (follower.portrait and type(follower.portrait) == "string" and #follower.portrait > 0) and follower.portrait
-                        panels[#panels + 1] = gui.Panel{
-                            bgimage = "panels/square.png",
-                            classes = {"token-panel"},
-                            data = {
-                                token = token,
-                                follower = follower,
-                            },
-                            flow = layoutList and "horizontal" or nil,
-                            children = {
-                                portraitId and gui.Panel{
-                                    bgimage = portraitId,
-                                    bgcolor = "white",
-                                    width = 24,
-                                    height = 24,
-                                    halign = "left",
-                                    lmargin = 32,
-                                } or nil,
-                                gui.Label{
-                                    text = description,
-                                    classes = {"token-name-label"},
-                                    valign = "center",
-                                    lmargin = portraitId and 4 or 32,
-                                }
-                            },
-                            press = function(element)
-                                element:SetClass("selected", not element:HasClass("selected"))
-                                local controller = element:FindParentWithClass("characterSelectorController")
-                                if controller then
-                                    controller:FireEvent("updateSelection")
-                                end
-                            end,
-                        }
+                for followerId,_ in pairs(followers) do
+                    local follower = dmhub.GetCharacterById(followerId)
+                    if follower and (fnFollowerFilter == nil or fnFollowerFilter(follower)) then
+                        panels[#panels+1] = buildTokenPanel(follower, token)
                     end
                 end
             end
@@ -411,7 +386,7 @@ local function _characterSelector(args)
                     local tokenId = panel.data.token.id
 
                     if panel.data.follower then
-                        local followerId = panel.data.follower.guid
+                        local followerId = panel.data.follower.id
                         if not newSelection[tokenId] then
                             newSelection[tokenId] = {selected = false}
                         end

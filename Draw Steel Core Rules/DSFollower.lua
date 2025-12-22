@@ -1,61 +1,218 @@
 local mod = dmhub.GetModLoading()
 
---- @class Follower
---- @field guid string The unique identifier for the follower
---- @field ancestry string The unique identifier for the follower's ancestry
---- @field portrait string The unique identifier / key for the follower's portrait
---- @field name string The follower's name
---- @field type string The type of follower (artisan, retainer, sage)
---- @field description string The description of the follower
---- @field languages table Flag table of language ID's the follower knows
---- @field skills table Flag table of skill ID's the follower knows
---- @field followerToken string The token ID of the follower token
---- @field availableRolls number The number of downtime rolls allocated to the follower
---- @field characteristic string The characteristic code for the follower's additional characteristic
---- @field assignedTo table Flag list of tokens the follower was assigned to
-Follower = RegisterGameType("Follower", "Monster")
-RegisterGameType("Retainer", "Follower")
-RegisterGameType("Sage", "Follower")
-RegisterGameType("Artisan", "Follower")
+--- @class follower
+--- @field follower.availableRolls number
+--- @field follower.followerType string artisan|sage|retainer
+follower = RegisterGameType("follower", "monster")
 
-Follower.type = "artisan"
-Follower.portrait = "DEFAULT_MONSTER_AVATAR"
-Follower.name = "New Follower"
-Follower.characteristic = "mgt"
-Follower.ancestry = ""
-Follower.followerToken = ""
-Follower.availableRolls = 0
+follower.availableRolls = 0
 
-function Follower.Create()
-    return Follower.new{
-        guid = dmhub.GenerateGuid(),
-        skills = {},
-        languages = {},
-        assignedTo = {},
+function follower.CreateNew(followerType)
+    local result = follower.new{
+		cr = 1,
+
+        followerType = followerType or "artisan",
+        availableRolls = 0,
+
+		monster_type = 'Monster', --this is the specific type of monster. e.g. Adult Black Dragon
+		monster_category = 'Monster', --this is the "Type" of monster. e.g. Dragon
+
+
+		damage_taken = 0,
+		max_hitpoints = 10,
+
+		attributes = creature.CreateAttributes(),
+
+		walkingSpeed = 5,
+
+        equipment = {
+            mainhand1 = "22ab52f5-955b-40c8-80c3-826f823e0a5b",
+        },
+
+		--map of skill id -> rating for that skill. 'true' means the monster is proficient and use proficiency bonus.
+		skillRatings = {
+		},
+
+		--map of saving throw -> rating for that saving throw.
+		savingThrowRatings = {
+		},
+
+		--list of innate attacks (type = AttackDefinition)
+		innateAttacks = {
+		},
+	}
+
+	return result
+end
+
+function creature:EnsureFollowers()
+    return {}
+end
+
+function follower:GetAvailableRolls()
+    return self:try_get("availableRolls", 0)
+end
+
+function follower:SetAvailableRolls(numRolls)
+    self.availableRolls = math.max(0, numRolls)
+end
+
+--- Modifies the available rolls counter
+--- @param rolls number The number of rolls to add
+--- @return follower self For chaining
+function follower:GrantRolls(rolls)
+    self.availableRolls = math.max(0, self:GetAvailableRolls() + (rolls or 0))
+    return self
+end
+
+--Create Follower table if it does not exist
+---@return table[] table of followers as charid is true
+function character:EnsureFollowers()
+    local followers = self:try_get("followers")
+    if not followers then
+        self.followers = {}
+    end
+    return self.followers
+end
+
+---@param followerid string
+function character:AddFollowerToMentor(followerid)
+    local token = dmhub.LookupToken(self)
+    token:ModifyProperties{
+        description = "Assign Follower",
+        execute = function()
+            local followers = self:EnsureFollowers()
+            followers[followerid] = true
+        end,
     }
 end
 
-function Follower.GetType(self)
-    return self:try_get("type", "artisan")
+---@param mentorToken Token[]
+---@param followerid string
+function character:RemoveFollowerFromMentor(followerid)
+    local token = dmhub.LookupToken(self)
+    token:ModifyProperties{
+        description = "Remove Follower",
+        execute = function()
+            local followers = self:EnsureFollowers()
+            followers[followerid] = nil
+        end,
+    }
 end
 
-function Follower:AddAssignedTo(tokenId, followerGuid)
-    local assignedTo = self:get_or_add("assignedTo", {})
-    assignedTo[tokenId] = followerGuid
-    return self
+---@param follower Token[]
+---@param followerInfo table[]
+---@param mentorToken Token[]
+local SetFollowerPartyInfo = function(follower, followerInfo, mentorToken)
+    follower.name = followerInfo.name
+    follower.ownerId = mentorToken.ownerId
+    follower.partyId = mentorToken.partyId        
 end
 
-function Follower:RemoveAssignedTo(tokenId)
-    local assignedTo = self:get_or_add("assignedTo", {})
-    assignedTo[tokenId] = nil
-    return self
-end
+---@param followerInfo table[]
+---@param followerType string artisan, sage, premaderetainer, existing
+---@param mentorToken Token[]
+---@param pregenid string|nil optional data for creating a pre-made retainer
+---@param open boolean will charactersheet open after creation
+CreateFollowerMonster = function(followerInfo, followerType, mentorToken, options)
+    local pregenid = options and options.pregenid or nil
+    local open = options and options.open or true
 
-function Follower.Describe(self)
-
-    local function ucFirst(s)
-        return s:sub(1,1):upper() .. s:sub(2)
+    if followerType == "existing" and options.followerToken then
+        mentorToken.properties:AddFollowerToMentor(options.followerToken)
+        return
     end
+
+    local locs = mentorToken.properties:AdjacentLocations()
+    local loc = #locs and locs[1] or mentorToken.properties.locsOccupying[1]
+    local newCharId
+    local newFollower
+
+    dmhub.Coroutine(function()
+        if followerType == "retainer" and (pregenid and pregenid ~= "none") then
+            newFollower = game.SpawnTokenFromBestiaryLocally(pregenid, loc, {fitLocatoin = true})
+            newCharId = newFollower.charid
+
+            SetFollowerPartyInfo(newFollower, followerInfo, mentorToken)
+            
+            newFollower:UploadToken()
+            game.UpdateCharacterTokens()
+        else
+            --Creates a new follower character
+            newCharId = game.CreateCharacter("follower")
+            --Wait for follower character to be created
+            for i = 1, 100 do
+                local newFollower = dmhub.GetCharacterById(newCharId)
+                if newFollower ~= nil then
+                    newFollower.properties = follower.CreateNew(followerType)
+
+                    SetFollowerPartyInfo(newFollower, followerInfo, mentorToken)
+
+                    local newFollowerCreature = newFollower.properties
+
+                    --Set basic follower property
+                    newFollowerCreature.role = "Follower"
+                    
+                    --Set Attributes based upon followerInfo
+                    if followerInfo.type ~= "retainer" then
+                        newFollowerCreature.attributes["rea"].baseValue = 1
+                        if newFollowerCreature.followerType == "sage" then
+                            newFollowerCreature.attributes["inu"].baseValue = 1
+                        elseif newFollowerCreature.followerType == "artisan" then
+                            newFollowerCreature.attributes[followerInfo.characteristic].baseValue = 1
+                        end
+                    else
+                        --Creature template for retainers in compendium
+                        newFollowerCreature.creatureTemplates = {}
+                        newFollowerCreature.creatureTemplates[#newFollowerCreature.creatureTemplates + 1] = "25263715-cef4-4e25-b4bd-ddedc3a87dea"
+                    end
+
+                    --Search for ancestry in compendium bands
+                    local ancestryTable = dmhub.GetTable(Race.tableName)
+                    local ancestry = ancestryTable[followerInfo.ancestry]
+                    local bandTable = dmhub.GetTable(MonsterGroup.tableName)
+                    local found = false
+                    for id, band in pairs(bandTable) do
+                        if string.lower(band.name) == string.lower(ancestry.name) then
+                            newFollowerCreature.groupid = id
+                            newFollowerCreature.keywords = {}
+                            newFollowerCreature.keywords[band.name] = true
+                            found = true
+                            break
+                        end
+                    end
+                    --Set custom keywords for follower if not found in compendium bands
+                    if not found then
+                        newFollowerCreature.keywords = {}
+                        newFollowerCreature.keywords[ancestry.name] = true
+                    end
+                    if followerInfo.portrait then
+                        newFollower.portrait = followerInfo.portrait
+                    end
+
+                    --Set skills and languages for followers
+                    newFollowerCreature.skillRatings = followerInfo.skills or {}
+                    newFollowerCreature.innateLanguages = followerInfo.languages or {}
+                    
+                    newFollower:UploadToken()
+                    game.UpdateCharacterTokens()
+                    newFollower:ChangeLocation(core.Loc{x = loc.x, y = loc.y})
+                    break
+                end
+                coroutine.yield(0.1)
+            end
+        end
+        local newFollower = dmhub.GetTokenById(newCharId)
+        mentorToken.properties:AddFollowerToMentor(newFollower.id)
+        
+        if open ~= false then
+            newFollower:ShowSheet()
+        end
+    end)
+
+end
+
+function DescribeFollower(follower)
     local function numToString(v)
         local n = tonumber(v)
         if n then
@@ -64,38 +221,38 @@ function Follower.Describe(self)
         return "?"
     end
 
-    local type = self:GetType()
-    local s = string.format("<b>%s Follower</b>", ucFirst(type))
+    local followerType = follower.type
+    local s = string.format("<b>%s Follower</b>", string.upper_first(followerType))
 
-    if self.type == "artisan" or self.type == "sage" then
-        if self:try_get("ancestry") then
+    if followerType == "artisan" or followerType == "sage" then
+        if follower.ancestry then
             s = s .. "\n<b>Ancestry:</b> "
-            s = s .. dmhub.GetTable(Race.tableName)[self.ancestry].name
+            s = s .. dmhub.GetTable(Race.tableName)[follower.ancestry].name
         end
 
-        if self.skills and next(self.skills) then
+        if follower.skills and next(follower.skills) then
             s = s .. "\n<b>Skills:</b> "
             local sList = ""
             local skills = dmhub.GetTable(Skill.tableName)
-            for id, _ in pairs(self.skills) do
+            for id, _ in pairs(follower.skills) do
                 if #sList > 0 then sList = sList .. ", " end
                 sList = sList .. skills[id].name
             end
             s = s .. sList
         end
 
-        if self.languages and next(self.languages) then
+        if follower.languages and next(follower.languages) then
             s = s .. "\n<b>Languages:</b> "
             local sList = ""
             local langs = dmhub.GetTable(Language.tableName)
-            for id, _ in pairs(self.languages) do
+            for id, _ in pairs(follower.languages) do
                 if #sList > 0 then sList = sList .. ", " end
                 sList = sList .. langs[id].name
             end
             s = s .. sList
         end
     else
-        local id = self.followerToken or ""
+        local id = follower.retainerType
         if id and #id > 0 then
             local node = assets:GetMonsterNode(id)
             if node and node.monster and node.monster.info then
@@ -117,7 +274,7 @@ function Follower.Describe(self)
 
                     local level = numToString(m:Level())
                     local role = m:Role() or "Retainer"
-                    s = string.format("%s\nLevel %s %s", s, level, ucFirst(role))
+                    s = string.format("%s\nLevel %s %s", s, level, string.upper_first(role))
 
                     local stam = numToString(m.max_hitpoints)
                     local speed = numToString(m.walkingSpeed)
@@ -127,40 +284,21 @@ function Follower.Describe(self)
         end
     end
 
-    local assignedTo = self:get_or_add("assignedTo", {})
     local atl = ""
-    for tokenId,_ in pairs(assignedTo) do
-        local t = dmhub.GetTokenById(tokenId)
-        if t and t.name and #t.name > 0 then
-            if #atl > 0 then 
-                atl = atl ..  ", "
-            else
-                atl = "<b>Assigned To:</b> "
-            end
-            atl = atl .. t.name
+    if follower.assignedTo ~= "" then
+        local token = dmhub.GetTokenById(follower.assignedTo)
+
+        if token then
+            local name = creature.GetTokenDescription(token)
+            atl = atl .. "<b>Assigned To:</b> " .. name
         end
     end
+
     if #atl > 0 then
         s = string.format("%s\n\n%s", s, atl)
     end
 
     return s
-end
-
-function Follower.ToTable(self)
-    local newFollower = {
-        guid = dmhub.GenerateGuid(),
-        type = self.type,
-        name = self.name or "New Follower",
-        characteristic = self.characteristic or "mgt",
-        skills = self:try_get("skills", {}),
-        ancestry = self.ancestry or "",
-        portrait = self.portrait or "",
-        languages = self:try_get("languages", {}),
-        followerToken = self.followerToken or "",
-        availableRolls = self.availableRolls or 0,
-    }
-    return newFollower
 end
 
 local function buildSkillLists()
@@ -197,7 +335,7 @@ local function buildLanguageList()
     return Language.GetDropdownList()
 end
 
-local function buildRetainerList()
+function buildRetainerList()
     local retainerTypes = { { id = "none", text = "Select retainer type...", }, }
     local retainerLookup = {}
 
@@ -282,7 +420,7 @@ local DialogStyles = {
     }
 }
 
-function Follower:CreateEditorDialog(options)
+function CreateFollowerEditorDialog(follower, options)
     local types = {
         {id = "artisan", text = "Artisan"},
         {id = "retainer", text = "Retainer"},
@@ -301,16 +439,16 @@ function Follower:CreateEditorDialog(options)
     local namePanel = gui.Label {
         classes = {"followerNameLabel"},
         halign = "left",
-        text = self.name or "Unnamed",
+        text = follower.name or "Unnamed",
         editable = true,
         edit = function(element)
             element:FireEvent("change")
         end,
         change = function(element)
-            self.name = element.text
+            follower.name = element.text
         end,
         refreshAll = function(element)
-            element.text = self.name or "Unnamed"
+            element.text = follower.name or "Unnamed"
         end
     }
 
@@ -335,11 +473,11 @@ function Follower:CreateEditorDialog(options)
                 halign = "left",
                 valign = "top",
                 options = types,
-                idChosen = self.type,
+                idChosen = follower.type,
                 change = function(element)
-                    if self.type ~= element.idChosen then
-                        self.skills = {}
-                        self.type = element.idChosen
+                    if follower.type ~= element.idChosen then
+                        follower.skills = {}
+                        follower.type = element.idChosen
                         editorPanel:FireEventTree("refreshAll")
                     end
                 end,
@@ -359,27 +497,27 @@ function Follower:CreateEditorDialog(options)
                 library = "Avatar",
                 restrictImageType = "Avatar",
                 allowPaste = true,
-                value = self.portrait or false,
+                value = follower.portrait or false,
                 refreshAll = function(element)
-                    if self:try_get("followerToken") then
-                        local node = assets:GetMonsterNode(self.followerToken)
+                    if follower.type == "retainer" and follower.retainerType then
+                        local node = assets:GetMonsterNode(follower.retainerType)
                         if node and node.monster then
-                            self.portrait = node.monster.info.portrait
-                            element.value = self.portrait
+                            follower.portrait = node.monster.info.offTokenPortrait
+                            element.value = follower.portrait
                         end
                     else
-                        element.value = self.portrait or false
+                        element.value = follower.portrait or false
                     end
                 end,
                 change = function(element)
-                    self.portrait = element.value
+                    follower.portrait = element.value
                 end
             },
         },
     }
 
     local ancestryPanel = gui.Panel {
-        classes = {cond(self.type == "retainer", "collapsed-anim")},
+        classes = {cond(follower.type == "retainer", "collapsed-anim")},
         flow = "horizontal",
         width = "auto",
         height = 30,
@@ -387,7 +525,7 @@ function Follower:CreateEditorDialog(options)
         halign = "left",
         valign = "top",
         refreshAll = function(element)
-            element:SetClass("collapsed-anim", self.type == "retainer")
+            element:SetClass("collapsed-anim", follower.type == "retainer")
         end,
         children = {
             gui.Label {
@@ -401,17 +539,17 @@ function Follower:CreateEditorDialog(options)
             },
             gui.Dropdown {
                 options = Race.GetDropdownList(),
-                idChosen = self:try_get("ancestry"),
+                idChosen = follower.ancestry,
                 textDefault = "Select an ancestry...",
                 change = function(element)
-                    self.ancestry = element.idChosen
+                    follower.ancestry = element.idChosen
                 end,
             }
         }
     }
 
     local characteristicPanel = gui.Panel {
-        classes = {cond(self.type ~= "artisan", "collapsed-anim")},
+        classes = {cond(follower.type ~= "artisan", "collapsed-anim")},
         flow = "horizontal",
         width = "auto",
         height = 30,
@@ -419,7 +557,7 @@ function Follower:CreateEditorDialog(options)
         halign = "left",
         valign = "top",
         refreshAll = function(element)
-            element:SetClass("collapsed-anim", self.type ~= "artisan")
+            element:SetClass("collapsed-anim", follower.type ~= "artisan")
         end,
         children = {
             gui.Label {
@@ -433,17 +571,17 @@ function Follower:CreateEditorDialog(options)
             },
             gui.Dropdown {
                 options = chars,
-                idChosen = self:try_get("characteristic"),
+                idChosen = follower.characteristic,
                 textDefault = "Select a characteristic...",
                 change = function(element)
-                    self.characteristic = element.idChosen
+                    follower.characteristic = element.idChosen
                 end,
             }
         }
     }
 
-    local skillsPanel = gui.Panel {
-        classes = {cond(self.type == "retainer", "collapsed-anim")},
+     local skillsPanel = gui.Panel {
+        classes = {cond(follower.type == "retainer", "collapsed-anim")},
         flow = "vertical",
         width = "100%-100",
         height = "auto",
@@ -451,12 +589,12 @@ function Follower:CreateEditorDialog(options)
         halign = "left",
         valign = "top",
         refreshAll = function(element)
-            element:SetClass("collapsed-anim", self.type == "retainer")
+            element:SetClass("collapsed-anim", follower.type == "retainer")
         end,
         children = {
             gui.Multiselect {
                 id = "skillSelector",
-                options = self.type == "sage" and sageSkills or artisanSkills,
+                options = follower.type == "sage" and sageSkills or artisanSkills,
                 width = "100%",
                 valign = "top",
                 halign = "left",
@@ -480,11 +618,11 @@ function Follower:CreateEditorDialog(options)
                     element:FireEvent("refreshAll")
                 end,
                 change = function(element)
-                    self.skills = element.value
+                    follower.skills = element.value
                 end,
                 refreshAll = function(element)
-                    local opts = self.type == "sage" and sageSkills or artisanSkills
-                    local selected = self:try_get("skills", {}) 
+                    local opts = follower.type == "sage" and sageSkills or artisanSkills
+                    local selected = follower.skills or {}
                     element:FireEvent("refreshSet", opts, selected)
                     element.value = selected
                 end,
@@ -493,7 +631,7 @@ function Follower:CreateEditorDialog(options)
     }
 
     local languagesPanel = gui.Panel {
-        classes = {cond(self.type == "retainer", "collapsed-anim")},
+        classes = {cond(follower.type == "retainer", "collapsed-anim")},
         flow = "vertical",
         width = "100%-100",
         height = "auto",
@@ -501,7 +639,7 @@ function Follower:CreateEditorDialog(options)
         halign = "left",
         valign = "top",
         refreshAll = function(element, info)
-            element:SetClass("collapsed-anim", self.type == "retainer")
+            element:SetClass("collapsed-anim", follower.type == "retainer")
         end,
         children = {
             gui.Multiselect {
@@ -526,20 +664,20 @@ function Follower:CreateEditorDialog(options)
                     halign = "left",
                 },
                 create = function(element)
-                    element.value = self:try_get("languages", {})
+                    element.value = follower.languages or {}
                 end,
                 change = function(element)
-                    self.languages = element.value
+                    follower.languages = element.value
                 end,
                 refreshAll = function(element, info)
-                    element.value = self:try_get("languages", {})
+                    element.value = follower.languages or {}
                 end,
             }
         }
     }
 
     local retainersPanel = gui.Panel {
-        classes = {cond(self.type ~= "retainer", "collapsed-anim")},
+        classes = {cond(follower.type ~= "retainer", "collapsed-anim")},
         flow = "vertical",
         width = "auto",
         height = "auto",
@@ -547,7 +685,7 @@ function Follower:CreateEditorDialog(options)
         halign = "left",
         valign = "top",
         refreshAll = function(element)
-            element:SetClass("collapsed-anim", self.type ~= "retainer")
+            element:SetClass("collapsed-anim", follower.type ~= "retainer")
         end,
         children = {
             gui.Label {
@@ -561,11 +699,11 @@ function Follower:CreateEditorDialog(options)
             },
             gui.Dropdown {
                 options = retainerTypes,
-                idChosen = self:try_get("followerToken", "none"),
+                idChosen = follower.retainerType or "none",
                 change = function(element)
-                    self.followerToken = element.idChosen
+                    follower.retainerType = element.idChosen
                     editorPanel:FireEventTree("refreshAll")
-                end
+                end,
             }
         }
     }
@@ -662,7 +800,6 @@ function Follower:CreateEditorDialog(options)
                             element:FindParentWithClass("editorPanel"):DestroySelf()
                         end,
                     }
-
                 }
             }
         }

@@ -1599,8 +1599,8 @@ function DTProjectEditor:_createRollButton(options)
                     end
 
                     -- Add each follower with rolls (iterate keyed table with pairs)
-                    for followerId, follower in pairs(followersWithRolls) do
-                        local followerRoller = DTRoller:new(follower)
+                    for _,follower in pairs(followersWithRolls) do
+                        local followerRoller = DTRoller:new(follower.properties, token.id)
                         menuItems[#menuItems + 1] = {
                             text = followerRoller:GetName(),
                             click = function(menuElement)

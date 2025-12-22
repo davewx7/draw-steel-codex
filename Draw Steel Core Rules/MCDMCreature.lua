@@ -248,13 +248,12 @@ function character:GetFollowers()
     return self:get_or_add("followers", {})
 end
 
-creature._tmp_retainer = false
 function creature:IsRetainer()
     return false
 end
 
 function monster:IsRetainer()
-    return self:try_get("retainer", false)
+    return self:try_get("followerType") == "retainer"
 end
 
 function creature:IsArtisan()
@@ -293,14 +292,10 @@ function character:Retainers()
     local retainers = {}
     local followers = self:GetFollowers()
 
-    for _, follower in ipairs(followers) do
-        if follower and follower.type == "retainer" then
-            if follower:has_key("followerToken") then
-                local retainerToken = dmhub.GetTokenById(follower.followerToken)
-                if retainerToken ~= nil then
-                    retainers[#retainers + 1] = retainerToken
-                end
-            end
+    for id, _ in ipairs(followers) do
+        local follower = dmhub.GetCharacterById(id)
+        if follower and follower:IsRetainer() then
+            retainers[#retainers + 1] = follower
         end
     end
 
@@ -322,7 +317,7 @@ end
 function monster:GetMentor()
     local token = dmhub.LookupToken(self)
     if token == nil then
-        return nil
+        return
     end
 
     --Check our party for a Mentor first
@@ -331,10 +326,8 @@ function monster:GetMentor()
         local charToken = dmhub.GetTokenById(charid)
         if charToken ~= nil then
             local followers = charToken.properties:GetFollowers()
-            for _, follower in ipairs(followers) do
-                if follower.followerToken == token.charid then
-                    return charToken.properties
-                end
+            if followers[token.charid] then
+                return charToken.properties
             end
         end
     end
@@ -347,10 +340,8 @@ function monster:GetMentor()
             local charToken = dmhub.GetTokenById(charid)
             if charToken ~= nil then
                 local followers = charToken.properties:GetFollowers()
-                for _, follower in ipairs(followers) do
-                    if follower.followerToken == token.charid then
-                        return charToken.properties
-                    end
+                if followers[token.charid] then
+                    return charToken.properties
                 end
             end
         end
