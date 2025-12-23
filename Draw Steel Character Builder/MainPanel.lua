@@ -73,7 +73,7 @@ function CharacterBuilder.CreatePanel()
         applyCurrentAncestry = function(element)
             local ancestryId = element.data.state:Get("ancestry.selectedId")
             if ancestryId then
-                local creature = _getCreature(element.data.source)
+                local creature = _getCreature(element.data.state)
                 if creature then
                     creature.raceid = ancestryId
                     element:FireEvent("tokenDataChanged")
@@ -82,14 +82,14 @@ function CharacterBuilder.CreatePanel()
         end,
 
         applyLevelChoice = function(element, info)
-            print("THC:: APPLYLEVELCHOICE::", json(info))
+            local feature = info.feature
             local creature = _getCreature(element.data.state)
             if creature then
                 local levelChoices = creature:GetLevelChoices()
                 if levelChoices then
-                    local choiceId = info.feature.guid
+                    local choiceId = feature.guid
                     local selectedId = info.selectedId
-                    local numChoices = info.feature:NumChoices(creature)
+                    local numChoices = feature:NumChoices(creature)
                     if numChoices == nil or numChoices < 1 then numChoices = 1 end
                     if (levelChoices[choiceId] == nil or numChoices == 1) and levelChoices[choiceId] ~= selectedId then
                         levelChoices[choiceId] = { selectedId }
@@ -103,12 +103,28 @@ function CharacterBuilder.CreatePanel()
                             end
                         end
                         if not alreadySelected then
-                            if numChoices > #levelChoices[choiceId] then
-                                levelChoices[choiceId][#levelChoices[choiceId]+1] = selectedId
-                            else
-                                levelChoices[choiceId][1] = selectedId
+                            local numSelected = #levelChoices[choiceId]
+                            local selectedCost = 1
+                            if #levelChoices[choiceId] > 0 and feature:try_get("costsPoints") then
+                                for _,option in ipairs(feature.options) do
+                                    local pointsCost = math.max(1, option:try_get("pointsCost", 1))
+                                    if option.guid == info.selectedId then selectedCost = pointsCost end
+                                    for _,guid in ipairs(levelChoices[choiceId]) do
+                                        if info.selectedId == guid then
+                                            numSelected = numSelected + (pointsCost - 1)
+                                            break
+                                        end
+                                    end
+                                end
                             end
-                            element:FireEvent("tokenDataChanged")
+                            if numChoices >= numSelected + selectedCost then
+                                if numChoices > 1 then
+                                    levelChoices[choiceId][#levelChoices[choiceId]+1] = selectedId
+                                else
+                                    levelChoices[choiceId][1] = selectedId
+                                end
+                                element:FireEvent("tokenDataChanged")
+                            end
                         end
                     end
                 end

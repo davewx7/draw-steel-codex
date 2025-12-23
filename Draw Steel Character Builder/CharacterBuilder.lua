@@ -62,7 +62,7 @@ end
 function CharacterBuilder._characterHasLevelChoice(character, featureId, itemId)
     if character then
         local levelChoices = character:GetLevelChoices()
-        if levelChoices then
+        if levelChoices and levelChoices[featureId] then
             for _,selectedId in ipairs(levelChoices[featureId]) do
                 if itemId == selectedId then return true end
             end
