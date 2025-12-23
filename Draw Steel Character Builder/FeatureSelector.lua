@@ -4,6 +4,7 @@
 
 CBFeatureSelector = RegisterGameType("CBFeatureSelector")
 
+local _characterHasLevelChoice = CharacterBuilder._characterHasLevelChoice
 local _fireControllerEvent = CharacterBuilder._fireControllerEvent
 local _getCreature = CharacterBuilder._getCreature
 
@@ -31,47 +32,131 @@ end
 --- @param feature CharacterFeatureChoice
 --- @return Panel
 function CBFeatureSelector.FeaturePanel(feature)
+
+    local function findOptionByGuid(guid)
+        for _,option in ipairs(feature.options) do
+            if option.guid == guid then
+                return option
+            end
+        end
+        return nil
+    end
+
+    local function formatOptionName(option)
+        local s = option.name
+        local pointCost = option:try_get("pointsCost")
+        if pointCost then
+            s = string.format("%s (%d point%s)", s, pointCost, pointCost ~= 1 and "s" or "")
+        end
+        return s
+    end
+
     local targets = {}
+    local numChoices = feature:NumChoices(creature)
+    for i = 1, numChoices do
+        targets[#targets+1] = gui.Panel{
+            classes = {"builder-base", "panel-base", "feature-target", "empty"},
+            data = {
+                featureGuid = feature.guid,
+                costsPoints = feature:try_get("costsPoints", false),
+                numChoices = numChoices,
+                itemIndex = i,
+                selectedItem = nil,
+            },
+            click = function(element)
+                _fireControllerEvent(element, "removeLevelChoice", {
+                    levelChoiceGuid = element.data.featureGuid,
+                    selectedId = element.data.selectedItem.guid,
+                })
+            end,
+            linger = function(element)
+                if element.data.selectedId then
+                    gui.Tooltip("Press to delete")(element)
+                end
+            end,
+            refreshBuilderState = function(element, state)
+                element.data.selectedItem = nil
+                local newText = "Empty Slot"
+                local creature = _getCreature(state)
+                if creature then
+                    local levelChoices = creature:GetLevelChoices()
+                    if levelChoices then
+                        local selectedItems = levelChoices[element.data.featureGuid]
+                        if selectedItems and #selectedItems >= element.data.itemIndex then
+                            local selectedId = selectedItems[element.data.itemIndex]
+                            if selectedId then
+                                local option = findOptionByGuid(selectedId)
+                                if option then
+                                    element.data.selectedItem = option
+                                    newText = formatOptionName(option)
+                                end
+                            end
+                        end
+                    end
+                end
+                element:FireEventTree("updateText", newText)
+                element:SetClass("filled", element.data.selectedItem ~= nil)
+                element:FireEvent("setVisibility")
+            end,
+            setVisibility = function(element)
+                local visible = true
+                if element.data.costsPoints and element.data.selectedItem == nil then
+                    local container = element:FindParentWithClass("container")
+                    if container then
+                        local pointsSelected = 0
+                        for _,child in ipairs(container.children) do
+                            local selectedItem = child.data.selectedItem
+                            if selectedItem then
+                                pointsSelected = pointsSelected + selectedItem:try_get("pointsCost", 1)
+                            end
+                        end
+                        visible = pointsSelected < element.data.numChoices
+                    end
+                end
+                element:SetClass("collapsed-anim", not visible)
+            end,
+            gui.Label{
+                classes = {"builder-base", "label", "feature-target"},
+                text = "Empty Slot",
+                updateText = function(element, text)
+                    element.text = text
+                end,
+            }
+        }
+    end
 
     local options = {}
-    for _,f in ipairs(feature.options) do
-        local titleLabel = gui.Label{
-            classes = {"builder-base", "label", "feature-header", "name"},
-            text = f.name
-        }
-        local descriptionLabel = gui.Label{
-            classes = {"builder-base", "label", "feature-header", "desc"},
-            textAlignment = "left",
-            text = f.description
-        }
+    for _,option in ipairs(feature.options) do
         options[#options+1] = gui.Panel{
-            classes = {"builder-base", "panel-base", "feature-option-panel"},
-            width = "100%",
-            height = "auto",
-            valign = "top",
-            halign = "left",
-            flow = "vertical",
+            classes = {"builder-base", "panel-base", "feature-choice"},
             data = {
-                id = f.guid,
-                item = f,
+                id = feature.guid,
+                item = option,
             },
             click = function(element)
                 local parent = element:FindParentWithClass("featureSelector")
                 if parent then
-                    parent:FireEvent("selectItem", element.data.id)
+                    parent:FireEvent("selectItem", element.data.item.guid)
                 end
             end,
             refreshBuilderState = function(element, state)
                 local creature = _getCreature(state)
                 if creature then
-                    -- TODO: Hide if it's already selected
+                    element:SetClass("collapsed", _characterHasLevelChoice(creature, element.data.id, element.data.item.guid))
                 end
             end,
             refreshSelection = function(element, selectedId)
-                element:SetClass("selected", selectedId == element.data.id)
+                element:SetClass("selected", selectedId == element.data.item.guid)
             end,
-            titleLabel,
-            descriptionLabel,
+            gui.Label{
+                classes = {"builder-base", "label", "feature-choice"},
+                text = formatOptionName(option)
+            },
+            gui.Label{
+                classes = {"builder-base", "label", "feature-choice", "desc"},
+                textAlignment = "left",
+                text = option.description
+            },
         }
     end
 
@@ -102,18 +187,16 @@ function CBFeatureSelector.SkillPanel(feature)
     local targets = {}
     local numChoices = feature:NumChoices(creature)
     for i = 1, numChoices do
-        targets[#targets+1] = gui.Label{
-            classes = {"builder-base", "label", "feature-target", "empty"},
-            text = "Empty Slot",
+        targets[#targets+1] = gui.Panel{
+            classes = {"builder-base", "panel-base", "feature-target", "empty"},
             data = {
                 featureGuid = feature.guid,
                 itemIndex = i,
                 selectedItem = nil,
             },
             click = function(element)
-                _fireControllerEvent(element, "deleteSkill", {
+                _fireControllerEvent(element, "removeLevelChoice", {
                     levelChoiceGuid = element.data.featureGuid,
-                    itemIndex = element.data.itemIndex,
                     selectedId = element.data.selectedItem.id,
                 })
             end,
@@ -124,7 +207,7 @@ function CBFeatureSelector.SkillPanel(feature)
             end,
             refreshBuilderState = function(element, state)
                 element.data.selectedItem = nil
-                element.text = "Empty Slot"
+                local newText = "Empty Slot"
                 local creature = _getCreature(state)
                 if creature then
                     local levelChoices = creature:GetLevelChoices()
@@ -136,25 +219,31 @@ function CBFeatureSelector.SkillPanel(feature)
                                 local skillItem = dmhub.GetTableVisible(Skill.tableName)[selectedId]
                                 if skillItem then
                                     element.data.selectedItem = skillItem
-                                    element.text = skillItem.name
+                                    newText = skillItem.name
                                 end
                             end
                         end
                     end
                 end
+                element:FireEventTree("updateText", newText)
                 element:SetClass("filled", element.data.selectedItem ~= nil)
-                element:SetClass("empty", element.data.selectedItem == nil)
             end,
+            gui.Label{
+                classes = {"builder-base", "label", "feature-target"},
+                text = "Empty Slot",
+                updateText = function(element, text)
+                    element.text = text
+                end,
+            }
         }
     end
 
     -- Candidate items
     local options = {}
     for _,item in ipairs(candidateSkills) do
-        options[#options+1] = gui.Label{
-            classes = {"builder-base", "label", "feature-choice"},
+        options[#options+1] = gui.Panel{
+            classes = {"builder-base", "panel-base", "feature-choice"},
             valign = "top",
-            text = item.name,
             data = {
                 id = item.id,
                 item = item,
@@ -174,6 +263,10 @@ function CBFeatureSelector.SkillPanel(feature)
             refreshSelection = function(element, selectedId)
                 element:SetClass("selected", selectedId == element.data.id)
             end,
+            gui.Label{
+                classes = {"builder-base", "label", "feature-choice"},
+                text = item.name,
+            }
         }
     end
 
@@ -198,7 +291,7 @@ function CBFeatureSelector._buildChildren(feature, targets, options)
         text = feature:GetDescription(),
     }
 
-    children = table.append_arrays(children, targets)
+    children[#children+1] = CBFeatureSelector._containerPanel(targets)
 
     children[#children+1] = gui.MCDMDivider{
         classes = {"builder-divider"},
@@ -208,7 +301,7 @@ function CBFeatureSelector._buildChildren(feature, targets, options)
         bgcolor = CharacterBuilder.COLORS.GOLD,
     }
 
-    children = table.append_arrays(children, options)
+    children[#children+1] = CBFeatureSelector._containerPanel(options)
 
     return children
 end
@@ -245,7 +338,7 @@ function CBFeatureSelector._mainPanel(feature, targets, options)
 
         data = {
             feature = feature,
-            selectedId = nil,
+            selectedId = nil,   -- The item currently selected in the options list
         },
 
         applyCurrentItem = function(element)
@@ -274,12 +367,23 @@ function CBFeatureSelector._mainPanel(feature, targets, options)
     }
 end
 
+--- Build a container panel for the list of targets or options
+--- @param children table The list of child elements
+--- @return Panel
+function CBFeatureSelector._containerPanel(children)
+    return gui.Panel{
+        classes = {"builder-base", "panel-base", "container"},
+        flow = "vertical",
+        children = children,
+    }
+end
+
 --- Build a consistent scrollable panel for choices
 --- @param children table The list of child elements to scroll
 --- @return Panel
 function CBFeatureSelector._scrollPanel(children)
     return gui.Panel {
-        classes = {"builder-base", "panel"},
+        classes = {"builder-base", "panel-base"},
         width = "100%",
         height = "100%-60",
         halign = "left",
@@ -287,11 +391,7 @@ function CBFeatureSelector._scrollPanel(children)
         flow = "vertical",
         vscroll = true,
         gui.Panel{
-            classes = {"builder-base", "panel"},
-            width = "100%",
-            height = "auto",
-            halign = "left",
-            valign = "top",
+            classes = {"builder-base", "panel-base", "container"},
             flow = "vertical",
             children = children,
         },

@@ -109,10 +109,59 @@ local function _panelStyles()
             border = DEBUG_PANEL_BG and 1 or 0
         },
         {
+            selectors = {"container"},
+            width = "99%",
+            height = "auto",
+            halign = "left",
+            valign = "top",
+        },
+        {
             selectors = {"border"},
             borderColor = CharacterBuilder.COLORS.CREAM,
             border = 2,
             cornerRadius = 10,
+        },
+
+        -- Feature selectors
+        {
+            selectors = {"feature-target"},
+            width = "99%",
+            height = "auto",
+            tmargin = 10,
+            vpad = 8,
+            bgimage = true,
+            bgcolor = "clear",
+            cornerRadius = 5,
+            borderWidth = 1,
+            borderColor = CharacterBuilder.COLORS.GOLD,
+        },
+        {
+            selectors = {"feature-target", "filled"},
+            bgcolor = CharacterBuilder.COLORS.FILLED_ITEM_BG,
+            borderColor = CharacterBuilder.COLORS.FILLED_ITEM_BORDER,
+        },
+        {
+            selectors = {"feature-target", "filled", "hover"},
+            bgcolor = CharacterBuilder.COLORS.DELETE_WARN_BG,
+            borderColor = CharacterBuilder.COLORS.DELETE_WARN_BORDER,
+        },
+        {
+            selectors = {"feature-choice"},
+            width = "99%",
+            height = "auto",
+            valign = "top",
+            flow = "vertical",
+            tmargin = 10,
+            vpad = 12,
+            bgimage = true,
+            bgcolor = "clear",
+            cornerRadius = 5,
+            borderWidth = 1,
+            borderColor = CharacterBuilder.COLORS.GOLD,
+        },
+        {
+            selectors = {"feature-choice", "selected"},
+            borderColor = CharacterBuilder.COLORS.GOLD03,
         },
 
         -- Right-side character panel
@@ -245,53 +294,34 @@ local function _labelStyles()
         -- Selector target for skill selection etc.
         {
             selectors = {"feature-target"},
-            width = "100%",
+            width = "auto",
             height = "auto",
-            tmargin = 10,
-            vpad = 8,
-            bgimage = true,
-            bgcolor = "clear",
-            cornerRadius = 5,
-            borderWidth = 1,
+            halign = "center",
         },
         {
-            selectors = {"feature-target", "empty"},
-            borderColor = CharacterBuilder.COLORS.GOLD,
-        },
-        {
-            selectors = {"feature-target", "filled"},
+            selectors = {"feature-target", "parent:filled"},
+            halign = "left",
+            hpad = 20,
             fontSize = 18,
             textAlignment = "left",
             bold = false,
-            hpad = 20,
-            bgcolor = CharacterBuilder.COLORS.FILLED_ITEM_BG,
-            borderColor = CharacterBuilder.COLORS.FILLED_ITEM_BORDER,
-        },
-        {
-            selectors = {"feature-target", "filled", "hover"},
-            bgcolor = CharacterBuilder.COLORS.DELETE_WARN_BG,
-            borderColor = CharacterBuilder.COLORS.DELETE_WARN_BORDER,
         },
 
         -- Options for skill selection etc.
         {
             selectors = {"feature-choice"},
-            width = "100%",
+            width = "96%",
             height = "auto",
-            tmargin = 10,
-            vpad = 18,
-            hpad = 20,
+            halign = "left",
+            hmargin = 20,
             textAlignment = "left",
+            fontSize = 22,
             bold = true,
-            bgimage = true,
-            bgcolor = "clear",
-            cornerRadius = 5,
-            borderWidth = 1,
-            borderColor = CharacterBuilder.COLORS.GOLD,
         },
         {
-            selectors = {"feature-choice", "selected"},
-            borderColor = CharacterBuilder.COLORS.GOLD03,
+            selectors = {"feature-choice", "desc"},
+            fontSize = 14,
+            bold = false,
         },
 
         -- For the right-side character panel / builder tab

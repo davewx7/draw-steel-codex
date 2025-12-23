@@ -54,6 +54,23 @@ function CharacterBuilder._blankToDashes(s)
     return s
 end
 
+--- Determine if we can find the specified item ID in the feature ID in the character's level choices
+--- @param character character
+--- @param featureId string
+--- @param itemId string
+--- @return boolean
+function CharacterBuilder._characterHasLevelChoice(character, featureId, itemId)
+    if character then
+        local levelChoices = character:GetLevelChoices()
+        if levelChoices then
+            for _,selectedId in ipairs(levelChoices[featureId]) do
+                if itemId == selectedId then return true end
+            end
+        end
+    end
+    return false
+end
+
 --- Return the count of items in a keyed table
 --- @param t table
 --- @return integer numItems

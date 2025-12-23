@@ -82,13 +82,14 @@ function CharacterBuilder.CreatePanel()
         end,
 
         applyLevelChoice = function(element, info)
+            print("THC:: APPLYLEVELCHOICE::", json(info))
             local creature = _getCreature(element.data.state)
             if creature then
                 local levelChoices = creature:GetLevelChoices()
                 if levelChoices then
                     local choiceId = info.feature.guid
                     local selectedId = info.selectedId
-                    local numChoices = info.feature:NumChoices()
+                    local numChoices = info.feature:NumChoices(creature)
                     if numChoices == nil or numChoices < 1 then numChoices = 1 end
                     if (levelChoices[choiceId] == nil or numChoices == 1) and levelChoices[choiceId] ~= selectedId then
                         levelChoices[choiceId] = { selectedId }
@@ -103,9 +104,9 @@ function CharacterBuilder.CreatePanel()
                         end
                         if not alreadySelected then
                             if numChoices > #levelChoices[choiceId] then
-                                levelChoices[#levelChoices+1] = selectedId
+                                levelChoices[choiceId][#levelChoices[choiceId]+1] = selectedId
                             else
-                                levelChoices[#levelChoices] = selectedId
+                                levelChoices[choiceId][1] = selectedId
                             end
                             element:FireEvent("tokenDataChanged")
                         end
@@ -120,17 +121,19 @@ function CharacterBuilder.CreatePanel()
             end
         end,
 
-        deleteSkill = function(element, info)
+        removeLevelChoice = function(element, info)
             local creature = _getCreature(element.data.state)
             if creature then
                 local levelChoices = creature:GetLevelChoices()
                 if levelChoices then
                     local levelChoice = levelChoices[info.levelChoiceGuid]
-                    if levelChoice and #levelChoice >= info.itemIndex then
-                        local selectedId = levelChoice[info.itemIndex]
-                        if selectedId == info.selectedId then
-                            table.remove(levelChoice, info.itemIndex)
-                            element:FireEvent("tokenDataChanged")
+                    if levelChoice then
+                        for i = #levelChoice, 1, -1 do
+                            if levelChoice[i] == info.selectedId then
+                                table.remove(levelChoice, i)
+                                element:FireEvent("tokenDataChanged")
+                                break
+                            end
                         end
                     end
                 end
@@ -154,17 +157,19 @@ function CharacterBuilder.CreatePanel()
 
             if token then
                 local creature = token.properties
-                local ancestryId = creature:try_get("raceid")
-                if ancestryId and ancestryId ~= element.data.state:Get("ancestry.selectedId") then
-                    element:FireEvent("selectAncestry", ancestryId, true)
-                end
+                if creature:IsHero() then
+                    local ancestryId = creature:try_get("raceid")
+                    if ancestryId and ancestryId ~= element.data.state:Get("ancestry.selectedId") then
+                        element:FireEvent("selectAncestry", ancestryId, true)
+                    end
 
-                local careerItem = creature:Background()
-                if careerItem and careerItem.id ~= element.data.state:Get("career.selectedId") then
-                    element:FireEvent("selectCareer", careerItem.id, true)
-                end
+                    local careerItem = creature:Background()
+                    if careerItem and careerItem.id ~= element.data.state:Get("career.selectedId") then
+                        element:FireEvent("selectCareer", careerItem.id, true)
+                    end
 
-                element:FireEventTree("refreshBuilderState", element.data.state)
+                    element:FireEventTree("refreshBuilderState", element.data.state)
+                end
             end
         end,
 
@@ -228,7 +233,6 @@ function CharacterBuilder.CreatePanel()
 
         tokenDataChanged = function(element)
             if element.data.charSheetInstance then
-                -- print("THC:: MAIN:: TDC:: CHARSHEET::")
                 element.data.charSheetInstance:FireEvent("refreshAll")
             else
                 element:FireEventTree("refreshBuilderState", element.data.state)
