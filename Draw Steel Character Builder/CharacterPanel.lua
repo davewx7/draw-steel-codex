@@ -21,31 +21,52 @@ CBCharPanel = {}
 --- @return table|nil The visible item table, or nil if no table exists for this feature type
 function CBCharPanel._getFeatureChoices(feature)
     if not feature or not feature.typeName then return nil end
+    local items = {}
+
+    local function tableToItems(tableItems)
+        for id,item in pairs(tableItems) do
+            items[id] = {
+                id = id,
+                name = item.name
+            }
+        end
+    end
 
     if feature.typeName == "CharacterDeityChoice" then
-        return dmhub.GetTableVisible(Deity.tableName)
+        tableToItems(dmhub.GetTableVisible(Deity.tableName))
     elseif feature.typeName == "CharacterFeatChoice" then
-        return dmhub.GetTableVisible(CharacterFeat.tableName)
+        tableToItems(dmhub.GetTableVisible(CharacterFeat.tableName))
     elseif feature.typeName == "CharacterFeatureChoice" then
-        local items = {}
         for _,item in ipairs(feature.options) do
             local newItem = {
                 id = item.guid,
                 name = item.name,
-                pointCost = item:try_get("pointCost"),
+                pointCost = item:try_get("pointsCost"),
             }
             items[item.guid] = newItem
         end
-        return items
     elseif feature.typeName == "CharacterLanguageChoice" then
-        return dmhub.GetTableVisible(Language.tableName)
+        tableToItems(dmhub.GetTableVisible(Language.tableName))
     elseif feature.typeName == "CharacterSkillChoice" then
-        return dmhub.GetTableVisible(Skill.tableName)
+        tableToItems(dmhub.GetTableVisible(Skill.tableName))
     elseif feature.typeName == "CharacterSubclassChoice" then
-        return dmhub.GetTableVisible(Class.tableName)
+        tableToItems(dmhub.GetTableVisible(Class.tableName))
     end
 
-    return nil
+    return next(items) and items or nil
+end
+
+--- Calculate the total selected value, accounting for point costs
+--- @param choices table Table of available choices keyed by id
+--- @param selected table Array of selected choice ids
+--- @return number Total value (sum of point costs, or count if no costs)
+function CBCharPanel._calcSelectedValue(choices, selected)
+    local total = 0
+    for _, id in ipairs(selected) do
+        local choice = choices[id]
+        total = total + (choice and choice.pointCost or 1)
+    end
+    return total
 end
 
 --- Create a panel displaying feature information for a single feature type
@@ -67,6 +88,7 @@ function CBCharPanel._statusFeature(featureTypeInfo)
     local detailLabel = gui.Label{
         classes = {"builder-base", "label", "feature-detail-detail-label"},
         refreshDetail = function(element, info)
+            table.sort(info.selectedDetail)
             element.text = table.concat(info.selectedDetail, "\n")
         end
     }
@@ -218,16 +240,18 @@ function CBCharPanel._statusItem(selector, getSelected)
                                 featureTypes[typeName].available = featureTypes[typeName].available + numChoices
 
                                 if levelChoices[guid] then
-                                    featureTypes[typeName].selected = featureTypes[typeName].selected + #levelChoices[guid]
+                                    local numSelected = #levelChoices[guid]
 
                                     local detail = {}
                                     local itemTable = CBCharPanel._getFeatureChoices(f.feature)
                                     if itemTable then
+                                        numSelected = CBCharPanel._calcSelectedValue(itemTable, levelChoices[guid])
                                         for _,id in ipairs(levelChoices[guid]) do
                                             local item = itemTable[id]
                                             if item then detail[#detail+1] = item.name end
                                         end
                                     end
+                                    featureTypes[typeName].selected = featureTypes[typeName].selected + numSelected
                                     if #detail then
                                         table.move(detail, 1, #detail, #featureTypes[typeName].selectedDetail + 1, featureTypes[typeName].selectedDetail)
                                     end
