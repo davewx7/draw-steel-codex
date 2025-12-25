@@ -742,6 +742,19 @@ function gui.GoblinScriptInput(options)
 					end,
 				}
 
+                if devmode() then
+                    menuItems[#menuItems+1] = {
+                        text = "Show Lua (Debug)",
+                        group = "docs",
+                        click = function()
+                            element.popup = nil
+                            element.root:AddChild(gui.GoblinScriptLuaDialog{
+                                formula = m_value,
+                            })
+                        end,
+                    }
+                end
+
 				element.popupPositioning = 'mouse'
 				element.popup = gui.ContextMenu{
 					entries = menuItems,
@@ -1112,6 +1125,214 @@ local GoblinScriptObjectHelpStrings = {
 	ability = "Creatures have abilities which they can expend actions and other resources to use. Spells and attacks are both types of abilities.",
 	proximity = "An ability that has a proximity requires all targets beyond the first to be within this range of the first target.",
 }
+
+
+function gui.GoblinScriptLuaDialog(options)
+    local formula = options.formula
+    options.formula = nil
+	local dialogWidth = 1200
+	local dialogHeight = 980
+
+    local resultPanel = nil
+
+    local out = {}
+    dmhub.CompileGoblinScriptDeterministic(formula, out)
+    local lua = GoblinScriptDebug.formulaOverrides[formula] or out.lua
+
+	local closePanel = 
+		gui.Panel{
+			style = {
+				valign = 'bottom',
+				flow = 'horizontal',
+				height = 60,
+				width = '100%',
+				fontSize = '60%',
+				vmargin = 0,
+			},
+		}
+
+	closePanel:AddChild(gui.PrettyButton{
+		text = 'Close',
+		style = {
+			height = 60,
+			width = 160,
+			fontSize = 44,
+			bgcolor = 'white',
+		},
+		events = {
+			click = function(element)
+				resultPanel.data.close()
+			end,
+		},
+	})
+
+
+	local titleLabel = gui.Label{
+		text = "GoblinScript Lua",
+		valign = 'top',
+		halign = 'center',
+		width = 'auto',
+		height = 'auto',
+		color = 'white',
+		fontSize = 28,
+	}
+
+    local mainFormPanel = gui.Panel{
+		bgcolor = 'white',
+		pad = 0,
+		margin = 0,
+		width = 1060,
+		height = 840,
+        flow = "vertical",
+        gui.Label{
+            valign = "top",
+            fontSize = 14,
+            width = "100%",
+            height = "auto",
+            text = string.format("This is the Lua used for the formula <b>%s</b>. Editing the Lua will replace it for this session as a debugging feature but the changes will not be saved once you exit the Codex.", formula),
+        },
+
+        gui.Input{
+            fontSize = 16,
+            fontFace = "courier",
+            multiline = true,
+            textAlignment = "topleft",
+            width = 1060,
+            height = 600,
+            halign = "center",
+            valign = "center",
+            text = lua,
+            clear = function(element)
+                element.text = lua
+            end,
+            editlag = 0.2,
+            edit = function(element)
+                if resultPanel == nil or element.text == lua then
+                    return
+                end
+                local chunk, err = load(element.text)
+                if not chunk then
+                    resultPanel:FireEventTree("showmessage", "Lua Error: " .. err)
+                    return
+                end
+
+                local ok, result = pcall(chunk)
+                if not ok then
+                    resultPanel:FireEventTree("showmessage", "Lua Runtime Error: " .. result)
+                    return
+                end
+
+                if type(result) ~= "function" then
+                    resultPanel:FireEventTree("showmessage", "Lua Error: Script did not return a function.")
+                    return
+                end
+
+                GoblinScriptDebug.OverrideFormula(formula, result, element.text)
+
+                resultPanel:FireEventTree("showmessage", "Custom Lua code loaded for this GoblinScript")
+                lua = element.text
+            end,
+        },
+        gui.Panel{
+            flow = "horizontal",
+            width = 1060,
+            height = 80,
+            gui.Panel{
+                width = 620,
+                height = 80,
+                vscroll = true,
+                gui.Label{
+                    width = 600,
+                    height = 80,
+                    halign = "left",
+                    fontSize = 14,
+                    showmessage = function(element, message)
+                        element.text = message
+                    end,
+                },
+            },
+
+            gui.Button{
+                classes = {cond(GoblinScriptDebug.formulaOverrides[formula] ~= nil, nil, "hidden")},
+                width = 180,
+                height = 22,
+                fontSize = 18,
+                text = "Clear Debug Lua",
+                showmessage = function(element, message)
+                    element:SetClass("hidden", GoblinScriptDebug.formulaOverrides[formula] == nil)
+                end,
+                click = function(element)
+                    GoblinScriptDebug.OverrideFormula(formula, nil, nil)
+                    resultPanel:FireEventTree("showmessage", "")
+                    lua = out.lua
+                    resultPanel:FireEventTree("clear")
+                end,
+            }
+        },
+    }
+
+	local args = {
+		style = {
+			bgcolor = 'white',
+			width = dialogWidth,
+			height = dialogHeight,
+			halign = 'center',
+			valign = 'center',
+		},
+		styles = {
+			Styles.Default,
+			Styles.Panel,
+		},
+
+		classes = {"framedPanel"},
+
+		floating = true,
+
+		captureEscape = true,
+		escapePriority = EscapePriority.EXIT_MODAL_DIALOG,
+		escape = function(element)
+			element.data.close()
+		end,
+
+		data = {
+			close = function()
+				resultPanel:FireEvent("close")
+				resultPanel:DestroySelf()
+			end,
+		},
+
+		children = {
+
+			gui.Panel{
+				id = 'content',
+				styles = {
+					{
+						halign = 'center',
+						valign = 'center',
+						width = '94%',
+						height = '94%',
+						flow = 'vertical',
+					},
+				},
+				children = {
+					titleLabel,
+					mainFormPanel,
+					closePanel,
+
+				},
+			},
+		},
+	}
+
+	for k,option in pairs(options) do
+		args[k] = option
+	end
+
+	resultPanel = gui.Panel(args)
+
+	return resultPanel
+
+end
 
 function gui.GoblinScriptEditorDialog(options)
 	options = dmhub.DeepCopy(options or {})

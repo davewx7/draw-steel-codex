@@ -976,8 +976,13 @@ function ActivatedAbilityAuraBehavior:CastOnArea(ability, casterToken, targets, 
     end
     local targetLoc = targetArea.origin
     local targetFloor = game.currentMap:GetFloorFromLoc(targetLoc)
-    print("Aura:: FOUND FLOOR:", targetFloor)
+    print("AREA:::", targetArea)
     if targetFloor ~= nil then
+        local auraArea = targetArea
+        local grow = tonumber(self:try_get("grow", 0)) or 0
+        if grow > 0 then
+            auraArea = auraArea:Grow(grow)
+        end
         local guid = dmhub.GenerateGuid()
         local auraInstance = AuraInstance.new {
             guid = guid,
@@ -986,7 +991,7 @@ function ActivatedAbilityAuraBehavior:CastOnArea(ability, casterToken, targets, 
             iconid = ability.iconid,
             name = ability.name,
             display = ability.display,
-            area = targetArea,
+            area = auraArea,
             time = TimePoint.Create(),
             duration = self:try_get("duration", "none"),
             symbols = symbols,
@@ -1007,10 +1012,8 @@ function ActivatedAbilityAuraBehavior:CastOnArea(ability, casterToken, targets, 
 
         local obj = nil
         if self.aura.objectid ~= nil then
-        print("AURA:: CREATE OBJECT")
             obj = targetFloor:SpawnObjectLocal(self.aura.objectid)
             if obj ~= nil then
-        print("AURA:: CREATED OBJECT")
                 auraInstance.object = {
                     floorid = obj.floorid,
                     objid = obj.objid,
@@ -1023,6 +1026,7 @@ function ActivatedAbilityAuraBehavior:CastOnArea(ability, casterToken, targets, 
                         aura = auraInstance,
                     },
                 })
+                options.symbols.cast.auraObject = obj
                 obj.x = targetArea.xpos
                 obj.y = targetArea.ypos
                 --obj.x = targetLoc.x-0.5

@@ -213,8 +213,9 @@ function ActivatedAbilityInvokeAbilityBehavior:Cast(ability, casterToken, target
 					end
 
                     local autoTarget = self:try_get("autoTarget", true)
-                    if autoTarget then
+                    if autoTarget and not abilityClone:RequiresPromptWhenCast() then
                         abilityClone.castImmediately = true
+                        print("INVOKE:: Auto-target enabled for", abilityClone.name)
                     end
 
                     if self.targeting == "formula" then
@@ -302,6 +303,7 @@ function ActivatedAbilityInvokeAbilityBehavior.ExecuteInvoke(invokerToken, abili
         }
 
         if targeting == "prompt" then
+            print("INVOKE:: PROMPT CAST FOR", abilityClone.name, coroutine.running())
             abilityClone.countsAsCast = true
             abilityClone.skippable = true
             gamehud.actionBarPanel:FireEventTree("invokeAbility", casterToken, abilityClone, symbols, invokerCallback)
@@ -327,8 +329,10 @@ function ActivatedAbilityInvokeAbilityBehavior.ExecuteInvoke(invokerToken, abili
                 end
             end
 
+            print("INVOKE:: Requires prompt =", abilityClone:RequiresPromptWhenCast(), "for", abilityClone.name, coroutine.running())
             if abilityClone:RequiresPromptWhenCast() then
                 local synth = abilityClone:SynthesizeAbilities(casterToken.properties)
+                print("INVOKE:: SYNTHESIZED ABILITIES =", synth ~= nil and #synth or 0, "for", abilityClone.name, coroutine.running())
                 if synth ~= nil and #synth == 1 then
                     --if exactly one synthesized ability then just auto-cast it?
                     abilityClone = synth[1]
@@ -336,9 +340,11 @@ function ActivatedAbilityInvokeAbilityBehavior.ExecuteInvoke(invokerToken, abili
             end
 
             if abilityClone:RequiresPromptWhenCast() then
+                print("INVOKE:: REQUIRING PROMPT")
                 abilityClone.skippable = true
                 gamehud.actionBarPanel:FireEventTree("invokeAbility", casterToken, abilityClone, symbols, invokerCallback, {instantCast = true, targets = targets})
             else
+                print("INVOKE:: IMMEDIATE CAST")
                 abilityClone:Cast(casterToken, targets, {
                     symbols = symbols,
                 })

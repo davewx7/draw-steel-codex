@@ -17,15 +17,18 @@ ActivatedAbility.RegisterType
 
 function ActivatedAbilityDelayBehavior:Cast(ability, casterToken, targets, options)
     local delay = ExecuteGoblinScript(self.delay, casterToken.properties:LookupSymbol(options.symbols), string.format("Delay for %s", ability.name))
+    print("DELAY:: EXECUTE DELAY:", delay, "for ability", ability.name, "by", dmhub.DescribeToken(casterToken)) --- IGNORE ---
     if delay > 60 then
         delay = 60
     end
 
     local endTime = dmhub.Time() + delay
     while dmhub.Time() < endTime do
+        print("DELAY:: WAITING...")
         coroutine.yield(0.1)
     end
 
+        print("DELAY:: PROCEED...")
     if self:try_get("proceedCondition", "") ~= "" then
         while not GoblinScriptTrue(ExecuteGoblinScript(self.proceedCondition, casterToken.properties:LookupSymbol(options.symbols), "Proceed condition")) do
             coroutine.yield(0.1)

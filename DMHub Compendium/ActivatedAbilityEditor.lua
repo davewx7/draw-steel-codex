@@ -3670,6 +3670,23 @@ function ActivatedAbilityBehavior:AuraEditor(parentPanel, list)
 		},
 	}
 
+    list[#list+1] = gui.Panel{
+        classes = "formPanel",
+        gui.Label{
+            classes = "formLabel",
+            text = "Grow:",
+        },
+        gui.Input{
+            classes = "formInput",
+            text = self:try_get("grow", 0),
+            events = {
+                change = function(element)
+                    self.grow = tonumber(element.text) or 0
+                end
+            }
+        },
+    }
+
     list[#list+1] = gui.Check{
         text = "Destroy on Death",
         value = not self:try_get("aliveafterdeath", false),

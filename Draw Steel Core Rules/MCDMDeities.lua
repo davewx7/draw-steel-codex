@@ -79,7 +79,7 @@ RegisterGoblinScriptSymbol(creature, {
 RegisterGoblinScriptSymbol(creature, {
 	name = "Domains",
 	type = "set",
-	desc = "The choosen domains of the creatures deities.",
+	desc = "The chosen domains of the creature's deities.",
 	examples = {'self.Domains has "Nature"'},
 	calculate = function(c)
         if not c:IsHero() then
@@ -437,7 +437,7 @@ end
 
 function CharacterDomainChoice:Choices(numOption, existingChoices, creature)
     local result = {} 
-    local domainsTable = dmhub.GetTable(DeityDomain.tableName) or {}
+    local domainsTable = GetTableCached(DeityDomain.tableName)
 
     local allDomains = {}
     for domainId, domain in unhidden_pairs(domainsTable) do

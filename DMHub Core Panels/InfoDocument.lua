@@ -504,6 +504,7 @@ function GameHud:CreateDocumentDialog()
             leftPanel,
             mainPanel,
             closeButton,
+            gui.DialogResizePanel(self, dialogWidth, dialogHeight),
         },
     }
 
@@ -711,41 +712,7 @@ function GameHud:CreateDocumentDialog()
         children = {
             dialogPanel,
 
-            --resize panel.
-            gui.Panel {
-                bgimage = 'panels/dialog-handle.png',
-                opacity = 0,
-                draggable = true,
-                swallowPress = true,
-                x = dialogWidth - 32,
-                y = dialogHeight - 32,
-                hoverCursor = "diagonal-expand",
-                dragBounds = { x1 = 100, y1 = -1000, x2 = 1000, y2 = -100 },
-                styles = {
-                    {
-                        bgcolor = 'grey',
-                        width = 32,
-                        height = 32,
-                        valign = 'top',
-                        halign = 'left',
-                        cornerRadius = 8,
-                    },
-                    {
-                        selectors = { 'hover' },
-                        brightness = 1.5,
-                    },
-                },
-                events = {
-                    dragging = function(element)
-                        dialogPanel.selfStyle.width = max(370, element.xdrag + 32)
-                        dialogPanel.selfStyle.height = element.ydrag + 32
-                    end,
-                    drag = function(element)
-                        element.x = element.xdrag
-                        element.y = element.ydrag
-                    end,
-                },
-            },
+
         }
     }
 

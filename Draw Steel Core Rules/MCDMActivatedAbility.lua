@@ -966,14 +966,14 @@ function ActivatedAbility:Render(options, params)
     if preDescription == "" then
         preDescriptionString = ""
     else
-        preDescriptionString = "<b>Effect: </b><size=16>" .. preDescription .. "</size>\n"
+        preDescriptionString = "<b>Effect: </b>" .. preDescription .. "\n"
     end 
 
     local descriptionString
     if description == "" then
         descriptionString = ""
     else
-        descriptionString = "<b>Effect: </b><size=16>" .. description .. "</size>"
+        descriptionString = "<b>Effect: </b>" .. description
     end
 
     if self:has_key("modifyDescriptions") then
@@ -1275,6 +1275,7 @@ function ActivatedAbility:Render(options, params)
             },
 
             gui.Label{
+                classes = {cond(preDescriptionString == "", "collapsed", nil)},
                 text = string.format("%s", preDescriptionString),
                 fontSize = 18,
                 fontFace = "Newzald",
@@ -1289,6 +1290,7 @@ function ActivatedAbility:Render(options, params)
             --main Power Roll name + rolls king panel
             gui.Panel{
 
+                classes = {cond(self:GetPowerRollDisplay() == "", "collapsed", nil)},
                 bgimage = true,
                 bgcolor = "clear",
                 width = "100%",
@@ -1321,16 +1323,13 @@ function ActivatedAbility:Render(options, params)
                 powerRollQueenPanel,
             },
 
-            gui.Label{
-                text = string.format("%s", descriptionString),
-                fontSize = 18,
-                fontFace = "Newzald",
-                fontWeight = "Light",
+            gui.DocumentDisplay{
+                text = descriptionString,
+                noninteractive = true,
                 width = "100%",
                 height = "auto",
                 halign = "left",
                 bmargin = 20,
-                markdown = true,
             },
 
 			tokenDependentInfoPanel,

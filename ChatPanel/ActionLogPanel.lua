@@ -346,10 +346,8 @@ local CreateRollMessagePanel = function(message, adoptiveParentPanel)
 
 	local customPanel = nil
 
-    print("ROLLMESSAGE: PROPERTIES =", json(message.properties))
 	if message.properties ~= nil then
 		customPanel = message.properties:CustomPanel(message)
-        print("ROLLMESSAGE: CUSTOM PANEL", customPanel ~= nil)
 	end
 
 	local longFormResultsLabel = gui.Label{

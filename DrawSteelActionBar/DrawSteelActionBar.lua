@@ -3620,7 +3620,7 @@ CreateAbilityController = function()
                         shape = "radius"
                     end
 
-                    if #m_positionTargetsChosen > 0 then
+                    if #m_positionTargetsChosen > 0 and (g_currentAbility.targeting == "contiguous" or g_currentAbility.targeting == "contiguous_wall") then
                         shape = "locations"
                     end
                 end
@@ -3920,7 +3920,7 @@ CreateAbilityController = function()
                     --allow selection of more targets.
                     AddCustomAreaMarker({ loc }, 'white')
 
-                    if g_currentAbility.targeting == "contiguous" or g_currentAbility.targeting == "contiguous_wall" then
+                    if g_currentAbility.targeting == "Contiguous" or g_currentAbility.targeting == "contiguous_wall" then
                         --targeting must be contiguous of current targets.
                         ClearRadiusMarkers()
 

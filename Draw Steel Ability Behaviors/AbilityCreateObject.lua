@@ -4,6 +4,7 @@ local mod = dmhub.GetModLoading()
 ActivatedAbilityCreateObjectBehavior = RegisterGameType("ActivatedAbilityCreateObjectBehavior", "ActivatedAbilityBehavior")
 
 ActivatedAbilityCreateObjectBehavior.summary = 'Create Object'
+ActivatedAbilityCreateObjectBehavior.randomize = false
 
 ActivatedAbility.RegisterType
 {
@@ -24,22 +25,46 @@ function ActivatedAbilityCreateObjectBehavior:Cast(ability, casterToken, targets
     end
 
     print("CAST:: LOCATIONS:", #targetArea.locations)
-    for _,loc in ipairs(targetArea.locations) do
+
+    --make sure we do the top locations first so their zorder is behind.
+    local locations = targetArea.locations
+    table.sort(locations, function(a, b) return a.y > b.y end)
+    for _,loc in ipairs(locations) do
         local targetFloor = game.currentMap:GetFloorFromLoc(loc)
         print("CAST:: TARGET FLOOR:", targetFloor)
         if targetFloor ~= nil then
-            local obj = targetFloor:SpawnObjectLocal(self.objectid)
-            print("CAST:: SPAWNED::", obj)
-            if obj ~= nil then
-                obj.x = loc.x
-                obj.y = loc.y
-                obj:Upload()
-            print("CAST:: UPLOAD::", obj)
-            else
-                print("CAST:: COULD NOT CREATE OBJECT")
+            local spawnOptions = {
+                spawnChildren = true,
+                outChildren = {},
+            }
+
+            local xdelta = 0
+            local ydelta = 0
+            if options.symbols.cast.auraObject then
+                spawnOptions.parentid = options.symbols.cast.auraObject.objid
+                xdelta = -options.symbols.cast.auraObject.x
+                ydelta = -options.symbols.cast.auraObject.y
             end
-        else
-            print("CAST:: INVALID FLOOR")
+            local obj = targetFloor:SpawnObjectLocal(self.objectid, spawnOptions)
+            if obj ~= nil then
+                obj.x = loc.x + xdelta
+                obj.y = loc.y + ydelta
+                for _,child in ipairs(spawnOptions.outChildren) do
+                    if self.randomize then
+                        for _,component in pairs(child.components) do
+                            component:Randomize{
+                                hue = 0.2,
+                                playbackSpeed = 0.1,
+                                xflip = true,
+                            }
+
+                            
+                        end
+                    end
+
+                    child:Upload()
+                end
+            end
         end
     end
 end
@@ -96,6 +121,15 @@ function ActivatedAbilityCreateObjectBehavior:EditorItems(parentPanel)
                     Refresh()
                 end,
             }
+        }
+
+        children[#children+1] = gui.Check{
+            text = "Randomize Objects",
+            value = self.randomize,
+            change = function(element)
+                self.randomize = element.value
+                Refresh()
+            end,
         }
 
         panel.children = children

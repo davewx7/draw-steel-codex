@@ -206,7 +206,7 @@ CreateEditorPanel = function(key, monsterGroup)
 
                         },
 
-                        gui.Label{
+                        gui.DocumentDisplay{
                             width = 600,
                             height = "auto",
                             fontSize = 16,

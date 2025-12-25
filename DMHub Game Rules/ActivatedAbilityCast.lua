@@ -23,6 +23,7 @@ local mod = dmhub.GetModLoading()
 --- @field retargets table
 --- @field forcedMovementPaths table
 --- @field ability ActivatedAbility
+--- @field auraObject false|table
 ActivatedAbilityCast = RegisterGameType("ActivatedAbilityCast")
 
 ActivatedAbilityCast.damagedealt = 0
@@ -40,6 +41,7 @@ ActivatedAbilityCast.creaturelistsize = 0
 ActivatedAbilityCast.heroicresourcesgained = 0
 ActivatedAbilityCast.opportunityAttacksTriggered = 0
 ActivatedAbilityCast.targets = {}
+ActivatedAbilityCast.auraObject = false
 
 --a table of custom memory for this cast.
 ActivatedAbilityCast.memory = false

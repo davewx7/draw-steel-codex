@@ -175,6 +175,8 @@ monster = RegisterGameType("monster", "creature")
 --- @alias Monster monster
 
 creature._tmp_aicontrol = 0
+creature._tmp_debug = false
+creature._tmp_concealed = false
 
 creature.max_hitpoints = 1
 
@@ -581,6 +583,9 @@ function creature.GetTokenDescription(token)
 end
 
 dmhub.DescribeToken = function(token)
+    if token == nil then
+        return "nil token"
+    end
 	if token.properties ~= nil and token.properties:GetMonsterType() ~= nil then
 		return token.properties:GetMonsterType()
 	end
@@ -941,6 +946,15 @@ end
 
 function creature:FillCalculatedStatusIcons(result)
 	local mods = self:GetActiveModifiers()
+
+    if self._tmp_concealed then
+        result[#result+1] = {
+            id = "concealed",
+            icon = "ui-icons/eye.png",
+            hoverText = "Concealed",
+            statusIcon = true,
+        }
+    end
 
 	local conditions = self:try_get("_tmp_directConditions")
     local explanations = self:try_get("_tmp_conditionExplanations") or {}
@@ -3442,6 +3456,10 @@ function creature:ListPreparedSpells()
 
 end
 
+function creature:IsRetainer()
+    return false
+end
+
 function creature:IsActivatedAbilityInnate(ability)
 	for i,a in ipairs(self.innateActivatedAbilities) do
 		if a == ability then
@@ -4312,6 +4330,8 @@ function creature:RefreshToken(token)
 	local modifiers = self:GetActiveModifiers()
     self._tmp_down = self:IsDown()
 
+    self._tmp_concealed = self:CalculateNamedCustomAttribute("Concealed") > 0
+
     for _,modifier in ipairs(modifiers) do
         modifier.mod:OnTokenRefresh(modifier, self, token)
     end
@@ -4865,7 +4885,7 @@ end
 --record a condition into a 'conditions' table passed in which is a {condid -> stacks} table.
 --this traces down into underlying conditions.
 function creature:RecordCondition(condid, stacks, conditions, maxdepth)
-	local dataTable = GetTableCached(CharacterCondition.tableName) or {}
+	local dataTable = GetTableCached(CharacterCondition.tableName)
 	local conditionInfo = dataTable[condid]
 
 	if conditionInfo == nil then
@@ -8124,8 +8144,6 @@ end
 
 function creature:DispatchEvent(eventName, info, onCompleteCallback)
 
-    --print("DISPATCH:: EVENT =", eventName, "SUBJECT", info ~= nil and info.subject ~= nil)
-
     local triggeredOnOthers = false
     if info == nil or info.subject == nil then
         self:DispatchEventOnOthers(eventName, info)
@@ -9962,16 +9980,6 @@ function creature:HasCondition(conditionid)
         end
     end
 
-    local conditions = rawget(self, "_tmp_directConditions")
-    if conditions ~= nil and conditions[conditionid] then
-        return true
-    end
-
-    conditions = rawget(self, "_tmp_calculatedConditions")
-    if conditions ~= nil and conditions[conditionid] then
-        return true
-    end
-
 
 	local seqFound = -1
 	local result = false
@@ -9991,7 +9999,21 @@ function creature:HasCondition(conditionid)
 		end
 	end
 
-    return result
+    if result then
+        return result
+    end
+
+    local conditions = rawget(self, "_tmp_directConditions")
+    if conditions ~= nil and conditions[conditionid] then
+        return true
+    end
+
+    conditions = rawget(self, "_tmp_calculatedConditions")
+    if conditions ~= nil and conditions[conditionid] then
+        return true
+    end
+
+    return false
 
 end
 

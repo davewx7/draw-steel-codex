@@ -51,6 +51,15 @@ local function LogDebugEntry(entry)
     end
 end
 
+GoblinScriptDebug = {
+    formulaOverrides = {},
+
+    OverrideFormula = function(formula, fn, lua)
+        GoblinScriptDebug.formulaOverrides[formula] = lua
+        g_compiled[formula] = fn
+    end,
+}
+
 local g_profileGoblinScript = dmhub.ProfileMarker("ExecuteGoblinScript")
 
 local g_profileInstruments = {}
