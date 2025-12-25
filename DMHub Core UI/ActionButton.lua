@@ -478,8 +478,8 @@ function gui.SelectorButton(options)
                 interactable = false,
                 gui.Label{
                     classes = {"selector-button-label"},
-                    width = "auto",
-                    height = "auto",
+                    width = "98%",
+                    height = "98%",
                     halign = labelAlign,
                     fontFace = fontFace,
                     fontSize = fontSize,
