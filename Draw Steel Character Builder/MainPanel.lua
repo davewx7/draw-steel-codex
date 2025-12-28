@@ -392,6 +392,21 @@ function CharacterBuilder.CreatePanel()
             if classItem then
                 local featureDetails = {}
                 -- TODO: Deal with leveled choices
+                local classFill = {}
+                classItem:FillLevelsUpTo(hero:GetClassLevel(), false, "nonprimary", classFill)
+
+                for _,item in ipairs(classFill) do
+                    if item:try_get("features") and #item.features > 0 then
+                        for _,feature in ipairs(item.features ) do
+                            featureDetails[#featureDetails+1] = {
+                                feature = feature,
+                                class = classItem,
+                            }
+                        end
+                    end
+                end
+                print("THC:: CLASSFEATURES::", json(featureDetails))
+
                 newState[#newState+1] = { key = "class.selectedItem", value = classItem }
                 newState[#newState+1] = { key = "class.featureDetails", value = featureDetails }
             end

@@ -280,14 +280,17 @@ end
 --- Trims and truncates a string to a maximum length
 --- @param str string The string to process
 --- @param maxLength number The maximum length before truncation
+--- @param stopAtNewline boolean Whether to trim to the first newline
 --- @return string The processed string
-function CharacterBuilder._trimToLength(str, maxLength)
+function CharacterBuilder._trimToLength(str, maxLength, stopAtNewline)
+    stopAtNewline = stopAtNewline == nil and true or stopAtNewline
+
     -- Trim leading whitespace
     str = str:match("^%s*(.*)") or str
 
     -- Cut at first newline if exists
     local newlinePos = str:find("\n")
-    if newlinePos then
+    if newlinePos and stopAtNewline then
         str = str:sub(1, newlinePos - 1)
     end
 

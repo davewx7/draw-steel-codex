@@ -50,7 +50,7 @@ function CBClassDetail._navPanel()
 
         registerFeatureButton = function(element, button)
             element:AddChild(button)
-            local changeButton = element:FindChildRecursive(function(element) return element:HasClass("changeAncestry") end)
+            local changeButton = element:FindChildRecursive(function(element) return element:HasClass("changeClass") end)
             if changeButton then changeButton:SetAsLastSibling() end
         end,
 
@@ -145,7 +145,7 @@ function CBClassDetail._overviewPanel()
                     end
                 end
 
-                text = table.concat(textItems, "\n\n")
+                text = CharacterBuilder._trimToLength(table.concat(textItems, "\n\n"), 2000, false)
             end
             element.text = text
         end
@@ -280,13 +280,14 @@ function CBClassDetail.CreatePanel()
                                 local featureRegistry = CharacterBuilder._makeFeatureRegistry{
                                     feature = f.feature,
                                     selectorId = SELECTOR,
-                                    selectedId = heroClass,
+                                    selectedId = heroClass.id,
                                     getSelected = function(hero)
-                                        local classes = hero:try_get("classes", {})
-                                        return #classes > 0 and classes[1]
+                                        local class = hero:GetClass()
+                                        if class then return class.id end
                                     end
                                 }
                                 if featureRegistry then
+                                    print("THC:: REGPANEL::", featureId)
                                     element.data.features[featureId] = true
                                     navPanel:FireEvent("registerFeatureButton", featureRegistry.button)
                                     detailPanel:FireEvent("registerFeaturePanel", featureRegistry.panel)

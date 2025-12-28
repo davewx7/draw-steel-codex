@@ -510,6 +510,7 @@ end
 --- @param feature CharacterSkillChoice
 --- @return Panel
 function CBFeatureSelector.SkillPanel(feature)
+    print("THC:: SKILLPANEL::", feature.source)
 
     local targetsContainer = gui.Panel{
         classes = {"builder-base", "panel-base", "container"},
