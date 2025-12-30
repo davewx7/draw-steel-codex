@@ -417,6 +417,9 @@ function CharacterBuilder.CreatePanel()
                     entry.class:FillFeatureDetailsForLevel(levelChoices, entry.level, false, "nonprimary", classFill)
                 end
                 local filteredFeatures, featureDetails = _filterFeatures(classFill)
+                -- print("THC:: CLASSFILL::", json(classFill))
+                -- print("THC:: FILTERED::", json(filteredFeatures))
+                -- print("THC:: FLATTENED::", json(featureDetails))
 
                 newState[#newState+1] = { key = "class.selectedItem", value = classItem }
                 newState[#newState+1] = { key = "class.selectedSubclasses", value = classAndSubClasses }

@@ -47,7 +47,7 @@ function CBCharPanel._getFeatureChoices(feature)
             items[item.guid] = {
                 id = item.guid,
                 name = item.name,
-                pointCost = item:try_get("pointsCost"),
+                pointCost = item:try_get("pointsCost", 1),
             }
         end
     end
@@ -112,28 +112,6 @@ end
 --- @param getSelected function(hero) Return the selected item on the hero
 --- @return Panel
 function CBCharPanel._statusItem(selector, getSelected)
-
-    local function translateTypeName(typeName)
-        local s = typeName:match("Character(.+)Choice")
-        if s == "Feat" then s = "Perk" end
-        return s
-    end
-
-    local function typeNameIsChoice(typeName)
-        return typeName == "CharacterDeityChoice"
-            or typeName == "CharacterFeatChoice"
-            or typeName == "CharacterFeatureChoice"
-            or typeName == "CharacterIncidentChoice"
-            or typeName == "CharacterLanguageChoice"
-            or typeName == "CharacterSkillChoice"
-            or typeName == "CharacterSubclassChoice"
-    end
-
-    local function typeNameOrder(typeName)
-        -- The input is translated
-        local typeOrders = { Subclass = 1, Feature = 2, Skill = 3, Language = 4, Perk = 5, Deity = 6, Incident = 7, }
-        return string.format("%d-%s", typeOrders[typeName] or 9, typeName)
-    end
 
     local headingText = _ucFirst(selector)
 
@@ -841,10 +819,12 @@ function CBCharPanel._detailPanel()
     }
 
     local contentPanel = gui.Panel{
-        width = "100%",
-        height = "auto",
-        halign = "center",
+        classes = {"builder-base", "panel-base"},
+        width = "98%",
+        height = "90%",
+        halign = "left",
         valign = "top",
+        flow = "vertical",
         vscroll = true,
         data = {
             madeContent = {},

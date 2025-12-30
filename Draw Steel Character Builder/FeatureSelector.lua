@@ -6,6 +6,7 @@ CBFeatureSelector = RegisterGameType("CBFeatureSelector")
 local _characterHasLevelChoice = CharacterBuilder._characterHasLevelChoice
 local _fireControllerEvent = CharacterBuilder._fireControllerEvent
 local _getHero = CharacterBuilder._getHero
+local _getState = CharacterBuilder._getState
 local _safeGet = CharacterBuilder._safeGet
 
 --- Determine if the builder cares about the feature and, if so,
@@ -346,10 +347,15 @@ function CBFeatureSelector.FeaturePanel(feature)
             element.data.numChoices = numChoices
 
             local levelChoices = hero:GetLevelChoices()
-            local currentOptions = feature:Choices(1, levelChoices[feature.guid] or {}, hero) or {}
+            -- local currentOptions = feature:Choices(numChoices, levelChoices[feature.guid] or {}, hero) or {}
+            local currentOptions = feature:GetOptions(hero:GetLevelChoices())
             element.data.itemCache = {}
             for _, option in ipairs(currentOptions) do
-                element.data.itemCache[option.id] = option
+                element.data.itemCache[option.guid] = {
+                    id = option.guid,
+                    text = option.name,
+                    pointsCost = _safeGet(option, "pointsCost", 1),
+                }
             end
 
             for i = #element.children + 1, numChoices do
@@ -378,13 +384,13 @@ function CBFeatureSelector.FeaturePanel(feature)
             for _ = #element.children + 1, numOptions do
                 element:AddChild(CBFeatureSelector._optionPanel({
                     feature = feature,
-                    idFieldName = "guid",
+                    idFieldName = "id",
                     useDesc = true,
                     formatName = formatOptionName,
                     itemIsSelected = function(state, featureGuid, item)
                         local hero = _getHero(state)
                         if hero then
-                            return _characterHasLevelChoice(hero, featureGuid, item.guid)
+                            return _characterHasLevelChoice(hero, featureGuid, item.id)
                         end
                     end,
                 }))
@@ -919,6 +925,10 @@ function CBFeatureSelector._mainPanel(options)
                 parent:FireEvent("applyCurrentItem")
             end
         end,
+        enableSelect = function(element, enabled)
+            element:SetClass("disabled", not enabled)
+            element.interactable = enabled
+        end,
         refreshBuilderState = function(element, state)
             -- TODO:
         end,
@@ -943,12 +953,46 @@ function CBFeatureSelector._mainPanel(options)
                     feature = feature,
                     selectedId = element.data.selectedId
                 })
+                element.data.selectedId = nil
             end
+        end,
+
+        refreshBuilderState = function(element, state)
+            -- Must have a selection to proceed
+            local itemId = element.data.selectedId
+            if not itemId then
+                element:FireEventTree("enableSelect", false)
+                return
+            end
+
+            local feature = element.data.feature
+            local hero = _getHero(state)
+            local costsPoints = feature:try_get("costsPoints", false)
+
+            -- Single choice features that don't cost points are always selectable
+            if not costsPoints and feature:NumChoices(hero) == 1 then
+                element:FireEventTree("enableSelect", true)
+                return
+            end
+
+            -- Validate point budget
+            local itemTable = CBCharPanel._getFeatureChoices(feature)
+            if not itemTable or not hero then
+                element:FireEventTree("enableSelect", false)
+                return
+            end
+
+            local levelChoices = hero:GetLevelChoices()
+            local valueSelected = CBCharPanel._calcSelectedValue(itemTable, levelChoices[feature.guid] or {})
+            local proposedValue = valueSelected + (itemTable[itemId] and itemTable[itemId].pointCost or 0)
+
+            element:FireEventTree("enableSelect", proposedValue <= feature:NumChoices(hero))
         end,
 
         selectItem = function(element, itemId)
             element.data.selectedId = itemId
             element:FireEventTree("refreshSelection", itemId)
+            element:FireEvent("refreshBuilderState", _getState(element))
         end,
 
         scrollPanel,
