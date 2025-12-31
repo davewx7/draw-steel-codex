@@ -2,6 +2,9 @@
  Character Builder:  Building a character step by step.
  Functions standalone or as a tab in CharacterSheet.
 
+ TODO::
+ - Old builder attributes are in MCDMClassCarousel.lua start line 1481
+
  - Overall Design
  - Responding to Events
  - Managing State
@@ -39,7 +42,8 @@
  separate ideas, like "ancestry.selectedId", the currently selected GUID for
  Ancestry in the builder. It's important to note that these are not necessarily
  stored in a table structure. So, while "token" is a key, you cannot use
- "token.properties" to get the creature on the token.
+ state:Get("token.properties") to get the creature on the token. Instead you
+ would use state:Get(token).properties.
 
  Typically you will only need the state object when responding to refreshBuilderState
  and that event always provides it. There is a helper function to get state. See
@@ -58,7 +62,7 @@
 
  _getHero(source)
  Returns the character in the token in the state object. Source can be any UI
- element or the state object. Ensures the value returned is a hero via :IsHero()
+ element or the state object. Ensures the object returned is a hero via :IsHero()
  or returns nil.
 
  _getToken(source)
@@ -214,6 +218,18 @@ end
 --- @return boolean
 function CharacterBuilder._inCharSheet(element)
     return CharacterBuilder._getCharacterSheet(element) ~= nil
+end
+
+--- Merge two tables, with custom values overwriting defaults
+--- @param defaults table
+--- @param custom table|nil
+--- @return table
+function CharacterBuilder._mergeKeyedTables(defaults, custom)
+    custom = custom or {}
+    local result = {}
+    for k, v in pairs(defaults) do result[k] = v end
+    for k, v in pairs(custom) do result[k] = v end
+    return result
 end
 
 --- Safely get a named property from an item, defaulting to nil
