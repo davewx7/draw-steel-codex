@@ -360,3 +360,104 @@ CharacterBuilder.RegisterSelector{
     ord = 8,
     selector = CBSelectors._complication
 }
+
+--[[
+    Sharing information about testing status
+    TODO: Remove before release
+]]
+local TEST_DETAIL = [[
+# Testing the New Builder
+
+***Thank you** so much for testing this work in progress. We appreciate your effort. Your feedback will help us prepare this feature for release.*
+
+# Feedback Needed
+
+*We're looking for feedback in the following areas:*
+
+- For What's Working (below), stuff that doesn't work! *(Probably first echelon only until you hear we've released more, then that, too.)*
+- How it looks / renders on your UI. If it's bad, please include a screen shot with your bug submission.
+- How it preforms on your machine. If it seems slow, please let us know your processor, RAM, video card, and operating system.
+- Your experience using the builder - what's good, what's not so good, how might you improve it?
+
+*You're welcome to test with custom configured elements like ancestries, careers, classes, etc. Please validate that any issues aren't configuration before logging them.*
+
+# What *(we think)* Is Working
+
+*Our objective is to function at par with the existing builder. That means that you should be able to see and edit everything that the other builder tab does, just with a different user experience.*
+
+**Character Section**
+- Everything
+
+**Ancestry Section**
+- Everything
+
+**Career Section**
+- Everything
+
+**Class Section**
+- Everything
+
+**Character Panel**
+- Description Tab: Everything
+- Builder Tab: Everything
+- Exploration Tab: Everything
+
+# Known Issues
+
+- Descriptions are displayed inconsistently on choices.
+- Extra info like ability cards aren't displayed yet.
+
+# Reporing Issues
+
+- Please use the bug forum on the Codex Discord.
+- Where applicable, please verify the old builder tab works as expected while new builder fails. If both tabs behave the same, please log as a configuration issue.
+- Detailed reproduction steps, especially each thing you chose along your path, is super helpful.
+]]
+local function _testDetail()
+    return gui.Panel{
+        id = "testPanel",
+        classes = {"builder-base", "panel-base", "detail-panel", "testPanel"},
+        data = {
+            selector = "test",
+            features = {},
+        },
+
+        refreshBuilderState = function(element, state)
+            local visible = state:Get("activeSelector") == element.data.selector
+            element:SetClass("collapsed", not visible)
+            if not visible then
+                element:HaltEventPropagation()
+                return
+            end
+        end,
+
+        gui.Panel{
+            classes = {"builder-base", "panel-base"},
+            width = "98%",
+            height = "98%",
+            vscroll = true,
+            gui.Label{
+                classes = {"builder-base", "label"},
+                width = "98%",
+                height = "auto",
+                valign = "top",
+                fontSize = 16,
+                textAlignment = "topleft",
+                markdown = true,
+                text = TEST_DETAIL,
+            }
+        }
+    }
+end
+function CBSelectors._test()
+    return CBSelectors._makeButton{
+        text = "Testing Info",
+        data = { selector = "test" },
+    }
+end
+CharacterBuilder.RegisterSelector{
+    id = "test",
+    ord = 9,
+    selector = CBSelectors._test,
+    detail = _testDetail,
+}

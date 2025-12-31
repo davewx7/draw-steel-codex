@@ -472,7 +472,7 @@ function CharacterBuilder.CreatePanel()
 end
 
 -- TODO: Remove the gate on the setting
-local testWipBuilder = setting{
+setting{
     id = "testwipbuilder",
     description = "Test WIP Builder",
     editor = "check",
