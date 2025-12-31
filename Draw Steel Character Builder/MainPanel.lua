@@ -471,18 +471,23 @@ function CharacterBuilder.CreatePanel()
     }
 end
 
--- TODO: Remove the gate on dev mode
-if devmode() then
+-- TODO: Remove the gate on the setting
+local testWipBuilder = setting{
+    id = "testwipbuilder",
+    description = "Test WIP Builder",
+    editor = "check",
+    default = false,
+    storage = "Game",
+    section = "game",
+}
 
 --- Our tab in the character sheet
 CharSheet.RegisterTab {
     id = "builder2",
     text = "Builder (WIP)",
 	visible = function(c)
-		return c ~= nil and c:IsHero()
+		return c ~= nil and c:IsHero() and dmhub.GetSettingValue("testwipbuilder") == true
 	end,
     panel = CharacterBuilder.CreatePanel
 }
 dmhub.RefreshCharacterSheet()
-
-end
