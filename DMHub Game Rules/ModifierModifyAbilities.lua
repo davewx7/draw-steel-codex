@@ -130,7 +130,6 @@ CharacterModifier.RegisterAbilityModifier
 		text = "Range",
 		operations = { "Add", "Multiply", "Set" },
 		set = function(modifier, creature, ability, operation, value)
-            print("MODIFYABILITY:: MODIFY RANGE FOR", ability.name, "WITH OPERATION", operation, "VALUE", value)
 			local val = nil
 			if operation == "Set" then
 				val = tonumber(value)
@@ -139,10 +138,8 @@ CharacterModifier.RegisterAbilityModifier
 			else
                 if type(ability.range) == "string" and tonumber(ability.range) == nil then
                     val = string.format("(%s) + (%s)", ability.range, value)
-                    print("MODIFYABILITY:: RANGE FOR", ability.name, "IS STRING", val)
                 else
 				    val = tonum(ability.range) + tonum(value)
-                    print("MODIFYABILITY:: RANGE FOR", ability.name, "IS NUM", val)
                 end
 			end
 
