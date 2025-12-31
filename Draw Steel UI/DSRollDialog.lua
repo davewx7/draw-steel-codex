@@ -1733,9 +1733,15 @@ function GameHud.CreateRollDialog(self)
                     m_multitargets[GetCurrentMultiTarget()].surges = surgesOverride
                 end
 
-                CalculateRollText(options)
+                --CalculateRollText(options)
                 RecalculateMultiTargets()
-                resultPanel:FireEventTree("checkSurgeRequirement", rollProperties, GetEnabledModifiers())
+                -- Re-check requirements with the updated surge count
+                if rollProperties ~= nil then
+                    local rollInfo = dmhub.ParseRoll(rollInput.text, creature)
+                    resultPanel:FireEventTree("prepareBeforeRollProperties", rollInfo, GetEnabledModifiers(), rollProperties)
+                    resultPanel:FireEventTree('prepare', m_options)
+                end
+                CalculateRollText(options)
             end,
         }
     end
@@ -2074,29 +2080,6 @@ function GameHud.CreateRollDialog(self)
                 end
 
                 element.children = children
-            end,
-
-            checkSurgeRequirement = function(element, rollProperties, enabledModifiers)
-                local children = element.children
-                for i, child in ipairs(children) do
-                    local mod = child.data.mod
-                    if mod ~= nil and mod.modifier ~= nil and mod.modifier:try_get("rollRequirement", "none") ~= "none" then
-                        local passes = mod.modifier:CheckSurgeRequirement(rollProperties, enabledModifiers)
-                        child:SetClass("collapsed", not passes)
-                        mod.failsRequirement = not passes
-
-                        -- Uncheck abilities that fail requirements
-                        if not passes and child.value then
-                            child.value = false
-                            mod.override = false
-                        end
-
-                        --modify the failsRequirement in the modifier list.
-                        if child.data.modifierIndex ~= nil and m_options.modifiers[child.data.modifierIndex] ~= nil then
-                            m_options.modifiers[child.data.modifierIndex].failsRequirement = not passes
-                        end
-                    end
-                end
             end,
         },
     }

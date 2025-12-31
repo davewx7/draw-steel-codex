@@ -157,24 +157,6 @@ function CharacterModifier:CheckRollRequirement(rollInfo, enabledModifiers, roll
     return true
 end
 
-function CharacterModifier:CheckSurgeRequirement(rollProperties, enabledModifiers)
-    local requirement = self:try_get("rollRequirement", "none")
-    if requirement == "surges" then
-        if rollProperties:try_get("surges", 0) > 0 then
-            return true
-        else
-            for _, target in ipairs(rollProperties.multitargets) do
-                if target and target.surges and target.surges > 0 then
-                    return true
-                end
-            end
-            return false
-        end
-    end
-
-    return true
-end
-
 CharacterModifier.TypeInfo.power = {
 
     init = function(modifier)
