@@ -61,7 +61,10 @@ function CBFeatureSelector.SelectionPanel(selector, feature)
                     local hero = _getHero(state)
                     local feature = getCachedFeature(state, element.data.featureId)
                     if feature and hero then
-                        feature:OnRemoveSelection(hero, element.data.option)
+                        if feature:OnRemoveSelection(hero, element.data.option) then
+                            _fireControllerEvent(element, "tokenDataChanged")
+                            return
+                        end
                     end
                 end
 
@@ -393,7 +396,10 @@ function CBFeatureSelector.SelectionPanel(selector, feature)
                         -- Custom callback
                         local hero = _getHero(state)
                         if hero then
-                            feature:OnApplySelection(hero, selectedOption)
+                            if feature:OnApplySelection(hero, selectedOption) then
+                                _fireControllerEvent(element, "tokenDataChanged")
+                                return
+                            end
                         end
 
                         _fireControllerEvent(element, "applyLevelChoice", {

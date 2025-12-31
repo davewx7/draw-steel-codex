@@ -144,49 +144,6 @@ function CharacterBuilder._blankToDashes(s)
     return s
 end
 
---- Determine whether the requested characteristic is avialable in the list of options
---- @param state CharacterBuilderState
---- @param selectorId string The selector under which to find the option
---- @param tableId string The guid of the roll table we're looking for
---- @return boolean
--- function CharacterBuilder._careerCharacteristicAvailable(state, selectorId, tableId)
---     local careerItem = state:Get(selectorId .. ".selectedItem")
---     if careerItem then
---         for _,c in ipairs(careerItem:try_get("characteristics", {})) do
---             if c:try_get("tableid") == tableId then return true end
---         end
---     end
---     return false
--- end
-
---- Determine if we can find the specified item ID in the feature ID in the character's level choices
---- @param character character
---- @param featureId string
---- @param itemId string
---- @return boolean
--- function CharacterBuilder._characterHasLevelChoice(character, featureId, itemId)
---     if character then
---         local levelChoices = character:GetLevelChoices()
---         if levelChoices and levelChoices[featureId] then
---             for _,selectedId in ipairs(levelChoices[featureId]) do
---                 if itemId == selectedId then return true end
---             end
---         end
---     end
---     return false
--- end
-
---- Return the count of items in a keyed table
---- @param t table
---- @return integer numItems
--- function CharacterBuilder._countKeyedTable(t)
---     local numItems = 0
---     for _ in pairs(t) do
---         numItems = numItems + 1
---     end
---     return numItems
--- end
-
 --- Fires an event on the main builder panel
 --- @param element Panel The element calling this method
 --- @param eventName string
@@ -241,6 +198,17 @@ function CharacterBuilder._getToken(source)
     local state = CharacterBuilder._getState(source)
     if state then return state:Get("token") end
     return nil
+end
+
+--- Return the named function on the object, if it exists, else nil
+--- @param object any
+--- @param fnName string The name of the desired function
+--- @return function|nil
+function CharacterBuilder._hasFn(object, fnName)
+    local typeName = object.typeName
+    if typeName == nil then return nil end
+    local classTable = rawget(_G, typeName)
+    return classTable and type(classTable) == "table" and rawget(classTable, fnName)
 end
 
 --- @return boolean

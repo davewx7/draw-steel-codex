@@ -405,7 +405,7 @@ local TEST_DETAIL = [[
 # Known Issues
 
 - Second tier selection buttons, like after you've selected a class, are displayed in a long (albeit sorted) list instead of categorized.
-- Extra info display is sometimes redundant. This seems to be a configuration issue.
+- Extra info display is sometimes redundant or an empty panel.
 
 # Reporing Issues
 

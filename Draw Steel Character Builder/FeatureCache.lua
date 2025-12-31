@@ -2,6 +2,7 @@
     A cache and wrappers for our features
     to support the builder
 ]]
+local _hasFn = CharacterBuilder._hasFn
 local _safeGet = CharacterBuilder._safeGet
 
 CBFeatureCache = RegisterGameType("CBFeatureCache")
@@ -12,27 +13,6 @@ CBFeatureWrapper.__index = CBFeatureWrapper
 
 CBOptionWrapper = RegisterGameType("CBOptionWrapper")
 CBOptionWrapper.__index = CBOptionWrapper
-
---[[
-    Custom callback handlers by class / typeName.
-    Use these when you need to do something more
-    than or different from writing to levelChoices.
-]]
-local selectionHandlers = {
-    CharacterIncidentChoice = {
-        apply = function(hero, feature, option)
-            hero:RemoveNotesForTable(feature:GetGuid())
-            local noteItem = hero:GetOrAddNoteForTableRow(feature:GetGuid(), option:GetGuid())
-            if noteItem then
-                noteItem.title = feature:GetName()
-                noteItem.text = option:GetRow().value:ToString()
-            end
-        end,
-        remove = function(hero, feature, option)
-            hero:RemoveNoteForTableRow(feature:GetGuid(), option:GetGuid())
-        end,
-    }
-}
 
 --[[
     Feature Cache
@@ -346,22 +326,28 @@ end
 
 --- Callback to support custom setting
 --- @param hero character
---- @param option CBOptionWrapper
-function CBFeatureWrapper:OnApplySelection(hero, option)
-    local handlers = selectionHandlers[self.feature.typeName]
-    if handlers and handlers.apply then
-        handlers.apply(hero, self, option)
+--- @param optionWrapper CBOptionWrapper
+--- @return boolean stopSave Return true to skip default save behavior
+function CBFeatureWrapper:OnApplySelection(hero, optionWrapper)
+    local feature = self:GetFeature()
+    local fn = _hasFn(feature, "OnApplySelection")
+    if fn and type(fn) == "function" then
+        return fn(feature, hero, optionWrapper:GetOption())
     end
+    return false
 end
 
 --- Callback to support custom unsetting
 --- @param hero character
---- @param option CBOptionWrapper
-function CBFeatureWrapper:OnRemoveSelection(hero, option)
-    local handlers = selectionHandlers[self.feature.typeName]
-    if handlers and handlers.remove then
-        handlers.remove(hero, self, option)
+--- @param optionWrapper CBOptionWrapper
+--- @return boolean stopSave Return true to skip default save behavior
+function CBFeatureWrapper:OnRemoveSelection(hero, optionWrapper)
+    local feature = self:GetFeature()
+    local fn = _hasFn(feature, "OnRemoveSelection")
+    if fn then
+        return fn(feature, hero, optionWrapper:GetOption())
     end
+    return false
 end
 
 --- @return boolean Allowed - was the selection allowed
@@ -492,6 +478,12 @@ end
 --- @return string
 function CBOptionWrapper:GetName()
     return _safeGet(self.option, "name", _safeGet(self.option, "text"))
+end
+
+--- Get the underlying option object
+--- @return table
+function CBOptionWrapper:GetOption()
+    return self.option
 end
 
 --- @return string

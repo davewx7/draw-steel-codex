@@ -131,3 +131,24 @@ end
 function CharacterIncidentChoice:CreateEditor(classOrRace, params)
     return nil
 end
+
+--- @param hero character
+--- @param option CharacterIncidentOption
+--- @return boolean stopSave Return true to skip default save behavior
+function CharacterIncidentChoice:OnApplySelection(hero, option)
+    hero:RemoveNotesForTable(self.guid)
+    local noteItem = hero:GetOrAddNoteForTableRow(self.guid, option.guid)
+    if noteItem then
+        noteItem.title = self.name
+        noteItem.text = option.row.value:ToString()
+    end
+    return false
+end
+
+--- @param hero character
+--- @param option CharacterIncidentOption
+--- @return boolean stopSave Return true to skip default save behavior
+function CharacterIncidentChoice:OnRemoveSelection(hero, option)
+    hero:RemoveNoteForTableRow(self.guid, option.guid)
+    return false
+end
