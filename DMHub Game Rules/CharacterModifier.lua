@@ -1801,6 +1801,15 @@ CharacterModifier.TypeInfo.activated = {
 		result[#result+1] = modifier.activatedAbility
 	end,
 
+    modifyAbility = function(modifier, creature, ability)
+        local suppresses = modifier:try_get("suppressOthers", false)
+        if suppresses and ability.name == modifier.activatedAbility.name and ability.guid ~= modifier.activatedAbility.guid then
+            return nil
+        end
+
+        return ability
+    end,
+
 	createEditor = function(modifier, element)
 		local Refresh
 		local firstRefresh = true
@@ -1842,6 +1851,14 @@ CharacterModifier.TypeInfo.activated = {
 					Refresh()
 				end,
 			}
+
+            children[#children+1] = gui.Check{
+                value = modifier:try_get("suppressOthers", false),
+                text = "Suppress Other Abilities With Same Name",
+                change = function(element)
+                    modifier.suppressOthers = element.value
+                end,
+            }
 			children[#children+1] = gui.PrettyButton{
 				width = 200,
 				height = 50,

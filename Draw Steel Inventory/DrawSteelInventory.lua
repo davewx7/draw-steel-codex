@@ -695,7 +695,7 @@ local CreateInventorySlot = function(dmhud, options)
 					if item:has_key("inspectionImage") then
 						dmhub.ViewSign(item:try_get("inspectionImage", item.iconid))
 					else
-						GameHud.instance:ViewCompendiumEntryModal(item, token)
+						GameHud.instance:ViewCompendiumEntryModal(item, token, {noninteractive = true})
 					end
 				end
 			end,

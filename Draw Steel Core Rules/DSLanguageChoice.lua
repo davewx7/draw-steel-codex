@@ -23,21 +23,18 @@ function CharacterLanguageChoice.Create(options)
 end
 
 local g_tagCache = {}
+local g_optCache = {}
 
 dmhub.RegisterEventHandler("refreshTables", function(keys)
 	g_tagCache = {}
-
+    g_optCache = {}
 end)
 
+function CharacterLanguageChoice:_cache()
+    if g_tagCache[self.categories] ~= nil and g_optCache[self.categories] ~= nil then return end
 
-function CharacterLanguageChoice:Choices(numOption, existingChoices, creature)
-
-	local cachedResult = g_tagCache[self.categories]
-	if cachedResult ~= nil then
-		return cachedResult
-	end
-
-	local result = {}
+	local tagCache = {}
+    local optCache = {}
 
 	local languagesTable = dmhub.GetTable(Language.tableName)
 	for k,lang in unhidden_pairs(languagesTable) do
@@ -46,17 +43,31 @@ function CharacterLanguageChoice:Choices(numOption, existingChoices, creature)
             if lang.speakers ~= "" then
                 text = string.format("%s (%s)", lang.name, lang.speakers)
             end
-            result[#result+1] = {
+            tagCache[#tagCache+1] = {
                 id = k,
                 text = text,
                 unique = true, --this means there will be checking in the builder so if we already have this id selected somewhere it won't be shown here.
             }
+            optCache[#optCache+1] = {
+                guid = k,
+                name = text,
+                unique = true,
+            }
         end
 	end
 
-	g_tagCache[self.categories] = result
+	g_tagCache[self.categories] = tagCache
+    g_optCache[self.categories] = optCache
+end
 
-	return result
+function CharacterLanguageChoice:Choices(numOption, existingChoices, creature)
+    if g_tagCache[self.categories] == nil then self:_cache() end
+    return g_tagCache[self.categories]
+end
+
+function CharacterLanguageChoice:GetOptions(choices)
+    if g_optCache[self.categories] == nil then self:_cache() end
+    return g_optCache[self.categories]
 end
 
 function CharacterLanguageChoice:GetDescription()

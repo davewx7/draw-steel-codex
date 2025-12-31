@@ -96,6 +96,12 @@ Being a hero isn't a job. It's a calling. But before you answered that call, you
 CharacterBuilder.STRINGS.CAREER.OVERVIEW = [[
 Your career describes what your life was before you became a hero. When you select a career, you gain a number of benefits, the details of which are specified in the career's description.]]
 
+CharacterBuilder.STRINGS.CLASS = {}
+CharacterBuilder.STRINGS.CLASS.INTRO = [[
+Choose your hero's class. This choice has the biggest impact on how your hero interacts with the rules of the game, particularly the rules for combat.]]
+CharacterBuilder.STRINGS.CLASS.OVERVIEW = [[
+While all your character creation decisions bear narrative weight, none influences the way you play the game like your choice of class. Your class determines how your hero battles the threats of the timescape and overcomes other obstacles. Do you bend elemental forces to your will through the practiced casting of magic spells? Do you channel the ferocity of the Primordial Chaos as you tear across the battlefield, felling foes left and right? Or do you belt out heroic ballads that give your allies a second wind and inspire them to ever-greater achievements?]]
+
 --[[
     Register selectors - controls down the left side of the window
 ]]
@@ -168,23 +174,6 @@ function CharacterBuilder._countKeyedTable(t)
     return numItems
 end
 
---- Determine whether the requested feature is avialable in the list of options
---- @param state CharacterBuilderState
---- @param selectorId string The selector under which to find the feature / option
---- @param featureId string The guid of the feature we're looking for
---- @return boolean
-function CharacterBuilder._featureAvailable(state, selectorId, featureId)
-    local featureDetails = state:Get(selectorId .. ".featureDetails")
-    if featureDetails then
-        for _,f in ipairs(featureDetails) do
-            if f.feature then
-                if f.feature.guid == featureId then return true end
-            end
-        end
-    end
-    return false
-end
-
 --- Fires an event on the main builder panel
 --- @param element Panel The element calling this method
 --- @param eventName string
@@ -245,6 +234,21 @@ function CharacterBuilder._inCharSheet(element)
     return CharacterBuilder._getCharacterSheet(element) ~= nil
 end
 
+--- Safely get a named property from an item, defaulting to nil
+--- Works with both class instances (with try_get) and plain tables
+--- @param item table The item to check
+--- @param propertyName string
+--- @param defaultValue? any
+--- @return any
+function CharacterBuilder._safeGet(item, propertyName, defaultValue)
+    if item.try_get then
+        return item:try_get(propertyName, defaultValue)
+    end
+    local value = item[propertyName]
+    if value == nil then value = defaultValue end
+    return value
+end
+
 function CharacterBuilder._sortArrayByProperty(items, propertyName)
     table.sort(items, function(a,b) return a[propertyName] < b[propertyName] end)
     return items
@@ -256,6 +260,9 @@ function CharacterBuilder._stripSignatureTrait(str)
     return str
 end
 
+--- Transform a keyed list into an array
+--- @param t table A keyed list
+--- @return table a An array
 function CharacterBuilder._toArray(t)
     local a = {}
     for _,item in pairs(t) do
@@ -264,24 +271,20 @@ function CharacterBuilder._toArray(t)
     return a
 end
 
-function CharacterBuilder._ucFirst(str)
-    if str and #str > 0 then
-        return str:sub(1,1):upper() .. str:sub(2)
-    end
-    return str
-end
-
 --- Trims and truncates a string to a maximum length
 --- @param str string The string to process
 --- @param maxLength number The maximum length before truncation
+--- @param stopAtNewline? boolean Whether to trim to the first newline
 --- @return string The processed string
-function CharacterBuilder._trimToLength(str, maxLength)
+function CharacterBuilder._trimToLength(str, maxLength, stopAtNewline)
+    stopAtNewline = stopAtNewline == nil and true or stopAtNewline
+
     -- Trim leading whitespace
     str = str:match("^%s*(.*)") or str
 
     -- Cut at first newline if exists
     local newlinePos = str:find("\n")
-    if newlinePos then
+    if newlinePos and stopAtNewline then
         str = str:sub(1, newlinePos - 1)
     end
 
@@ -292,6 +295,26 @@ function CharacterBuilder._trimToLength(str, maxLength)
 
     -- Truncate and add ellipsis
     return str:sub(1, maxLength) .. "..."
+end
+
+function CharacterBuilder._ucFirst(str)
+    if str and #str > 0 then
+        return str:sub(1,1):upper() .. str:sub(2)
+    end
+    return str
+end
+
+--- Return the closest number of faces to an actual die (equal to or above the value passed)
+--- @param rollFaces integer
+--- @return integer rollFaces
+function CharacterBuilder._validateRollFaces(rollFaces)
+    local validFaces = {2, 3, 6, 8, 10, 12, 20, 100}
+    for _, faces in ipairs(validFaces) do
+        if faces >= rollFaces then
+            return faces
+        end
+    end
+    return 100
 end
 
 --[[
@@ -334,42 +357,48 @@ function CharacterBuilder._makeDetailNavButton(selector, options)
     return CharacterBuilder._makeCategoryButton(options)
 end
 
---- Create a registry entry for a feature - a button and an editor panel
---- @parameter feature CharacterFeature|BackgroundCharacteristic
---- @parameter selectorId string The selector this is a category under
---- @parameter selectedId string The unique identifier of the item associated with the feature
---- @parameter checkAvailable function(state, selectorId, featureId)
---- @parameter getSelected function(character)
---- @return table{button,panel}|nil
+--- @class CBFeatureRegistryOptions
+--- @field feature CBFeatureWrapper
+--- @field selector string The selector we're running under
+--- @field selectedId string The id of the item selected on the hero
+--- @field checkAvailable? function (state, selector, featureId)
+--- @field getSelected function(hero) Return the currently selected value - match to or replace selectedId
+
+--- Create a registry entry for a feature - a button & an editor panel
+--- @param options CBFeatureRegistryOptions
+--- @param feature CBFeatureWrapper
+--- @return table|nil
 function CharacterBuilder._makeFeatureRegistry(options)
     local feature = options.feature
-    local selectorId = options.selectorId
+    local selector = options.selector
     local selectedId = options.selectedId
-    local checkAvailable = options.checkAvailable or CharacterBuilder._featureAvailable
     local getSelected = options.getSelected
 
-    local featurePanel = CBFeatureSelector.Panel(feature)
+    local featurePanel = CBFeatureSelector.SelectionPanel(selector, feature)
 
     if featurePanel then
         return {
             button = CharacterBuilder._makeCategoryButton{
-                text = CharacterBuilder._stripSignatureTrait(feature.name),
+                text = CharacterBuilder._stripSignatureTrait(feature:GetName()),
                 data = {
-                    featureId = feature:try_get("guid", feature:try_get("tableid")),
+                    featureId = feature:GetGuid(),
                     selectedId = selectedId,
+                    order = feature:GetOrder(),
                 },
                 click = function(element)
                     CharacterBuilder._fireControllerEvent(element, "updateState", {
-                        key = selectorId .. ".category.selectedId",
+                        key = selector .. ".category.selectedId",
                         value = element.data.featureId
                     })
                 end,
                 refreshBuilderState = function(element, state)
                     local tokenSelected = getSelected(CharacterBuilder._getHero(state)) or "nil"
-                    local isVisible = tokenSelected == element.data.selectedId and checkAvailable(state, selectorId, element.data.featureId)
-                    element:FireEvent("setAvailable", isVisible)
-                    element:FireEvent("setSelected", element.data.featureId == state:Get(selectorId .. ".category.selectedId"))
-                    element:SetClass("collapsed", not isVisible)
+                    local featureCache = state:Get(selector .. ".featureCache")
+                    local featureAvailable = featureCache and featureCache:GetFeature(element.data.featureId) ~= nil
+                    local visible = tokenSelected == element.data.selectedId and featureAvailable
+                    element:FireEvent("setAvailable", visible)
+                    element:FireEvent("setSelected", element.data.featureId == state:Get(selector .. ".category.selectedId"))
+                    element:SetClass("collapsed", not visible)
                 end,
             },
             panel = gui.Panel{
@@ -380,13 +409,15 @@ function CharacterBuilder._makeFeatureRegistry(options)
                 valign = "top",
                 halign = "center",
                 tmargin = 12,
-                -- vscroll = true,
                 data = {
-                    featureId = feature.guid,
+                    featureId = feature:GetGuid(),
                 },
                 refreshBuilderState = function(element, state)
-                    local isVisible = element.data.featureId == state:Get(selectorId .. ".category.selectedId")
-                    element:SetClass("collapsed", not isVisible)
+                    local visible = element.data.featureId == state:Get(selector .. ".category.selectedId")
+                    element:SetClass("collapsed", not visible)
+                    if not visible then
+                        element:HaltEventPropagation()
+                    end
                 end,
                 featurePanel,
             },
@@ -395,6 +426,69 @@ function CharacterBuilder._makeFeatureRegistry(options)
 
     return nil
 end
+
+--- Create a registry entry for a feature - a button and an editor panel
+--- @parameter feature table{category, catOrder, order, panelFn, feature}
+--- @parameter selectorId string The selector this is a category under
+--- @parameter selectedId string The unique identifier of the item associated with the feature
+--- @parameter checkAvailable function(state, selectorId, featureId)
+--- @parameter getSelected function(character)
+--- @return table{button,panel}|nil
+-- function CharacterBuilder._makeFeatureRegistry(options)
+--     local featureDef = options.feature
+--     local feature = featureDef.feature
+--     local selectorId = options.selectorId
+--     local selectedId = options.selectedId
+--     local checkAvailable = options.checkAvailable or CharacterBuilder._featureAvailable
+--     local getSelected = options.getSelected
+
+--     local featurePanel = featureDef.panelFn(feature)
+
+--     if featurePanel then
+--         return {
+--             button = CharacterBuilder._makeCategoryButton{
+--                 text = CharacterBuilder._stripSignatureTrait(feature.name),
+--                 data = {
+--                     featureId = feature:try_get("guid", feature:try_get("tableid")),
+--                     selectedId = selectedId,
+--                     order = featureDef.order,
+--                 },
+--                 click = function(element)
+--                     CharacterBuilder._fireControllerEvent(element, "updateState", {
+--                         key = selectorId .. ".category.selectedId",
+--                         value = element.data.featureId
+--                     })
+--                 end,
+--                 refreshBuilderState = function(element, state)
+--                     local tokenSelected = getSelected(CharacterBuilder._getHero(state)) or "nil"
+--                     local isVisible = tokenSelected == element.data.selectedId and checkAvailable(state, selectorId, element.data.featureId)
+--                     element:FireEvent("setAvailable", isVisible)
+--                     element:FireEvent("setSelected", element.data.featureId == state:Get(selectorId .. ".category.selectedId"))
+--                     element:SetClass("collapsed", not isVisible)
+--                 end,
+--             },
+--             panel = gui.Panel{
+--                 classes = {"featurePanel", "builder-base", "panel-base", "collapsed"},
+--                 width = "100%",
+--                 height = "98%",
+--                 flow = "vertical",
+--                 valign = "top",
+--                 halign = "center",
+--                 tmargin = 12,
+--                 data = {
+--                     featureId = feature.guid,
+--                 },
+--                 refreshBuilderState = function(element, state)
+--                     local isVisible = element.data.featureId == state:Get(selectorId .. ".category.selectedId")
+--                     element:SetClass("collapsed", not isVisible)
+--                 end,
+--                 featurePanel,
+--             },
+--         }
+--     end
+
+--     return nil
+-- end
 
 --- Build a Select button, forcing consistent styling
 --- @param options ButtonOptions 
@@ -421,4 +515,34 @@ function CharacterBuilder._makeSelectButton(options)
     opts.borderColor = CBStyles.COLORS.CREAM03
 
     return gui.PrettyButton(opts)
+end
+
+--- Sort an array of child panels by .data.order, preserving unordered items at start/end
+--- @param children table array of panel children
+--- @return table sorted children array
+function CharacterBuilder._sortButtons(children)
+    local prefix = {}
+    local ordered = {}
+    local suffix = {}
+
+    for _, child in ipairs(children) do
+        if child.data and child.data.order then
+            ordered[#ordered+1] = child
+        elseif #ordered > 0 then
+            suffix[#suffix+1] = child
+        else
+            prefix[#prefix+1] = child
+        end
+    end
+
+    table.sort(ordered, function(a, b)
+        return a.data.order < b.data.order
+    end)
+
+    local result = {}
+    table.move(prefix, 1, #prefix, 1, result)
+    table.move(ordered, 1, #ordered, #result + 1, result)
+    table.move(suffix, 1, #suffix, #result + 1, result)
+
+    return result
 end

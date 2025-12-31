@@ -227,9 +227,9 @@ local function _panelStyles()
         },
         {
             selectors = {"charpanel", "builder-check"},
-            halign = "left",
+            halign = "right",
             valign = "center",
-            hmargin = 150,
+            hmargin = 40,
             width = 24,
             height = 24,
             bgimage = "icons/icon_common/icon_common_29.png",
@@ -471,6 +471,11 @@ local function _buttonStyles()
             borderWidth = 1,
             borderColor = CBStyles.COLORS.GOLD03,
             color = CBStyles.COLORS.GOLD03,
+        },
+        {
+            selectors = {"disabled"},
+            borderColor = CBStyles.COLORS.GRAY02,
+            color = CBStyles.COLORS.GRAY02,
         },
         -- {
         --     selectors = {"available"},

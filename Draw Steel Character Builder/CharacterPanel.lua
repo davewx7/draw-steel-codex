@@ -1,7 +1,6 @@
 --[[
     Character Panel
 ]]
-
 local _blankToDashes = CharacterBuilder._blankToDashes
 local _fireControllerEvent = CharacterBuilder._fireControllerEvent
 local _getHero = CharacterBuilder._getHero
@@ -12,7 +11,8 @@ local _ucFirst = CharacterBuilder._ucFirst
 local INITIAL_TAB = "description"
 
 --- Character Panel Class
-CBCharPanel = {}
+CBCharPanel = RegisterGameType("CBCharPanel")
+CBCharPanel.__index = CBCharPanel
 
 --- Get the item table for a feature based on its type
 --- @param feature table The feature object
@@ -30,25 +30,26 @@ function CBCharPanel._getFeatureChoices(feature)
         end
     end
 
-    if feature.typeName == "CharacterDeityChoice" then
-        tableToItems(dmhub.GetTableVisible(Deity.tableName))
-    elseif feature.typeName == "CharacterFeatChoice" then
-        tableToItems(dmhub.GetTableVisible(CharacterFeat.tableName))
-    elseif feature.typeName == "CharacterFeatureChoice" then
+    local tableLookup = {
+        CharacterDeityChoice = Deity.tableName,
+        CharacterDomainChoice = DeityDomain.tableName,
+        CharacterFeatChoice = CharacterFeat.tableName,
+        CharacterLanguageChoice = Language.tableName,
+        CharacterSkillChoice = Skill.tableName,
+        CharacterSubclassChoice = "subclasses",
+    }
+
+    local tableName = tableLookup[feature.typeName]
+    if tableName then
+        tableToItems(dmhub.GetTableVisible(tableName))
+    elseif feature.typeName == "CharacterFeatureChoice" or feature.typeName == "CharacterIncidentChoice" then
         for _,item in ipairs(feature.options) do
-            local newItem = {
+            items[item.guid] = {
                 id = item.guid,
                 name = item.name,
-                pointCost = item:try_get("pointsCost"),
+                pointCost = item:try_get("pointsCost", 1),
             }
-            items[item.guid] = newItem
         end
-    elseif feature.typeName == "CharacterLanguageChoice" then
-        tableToItems(dmhub.GetTableVisible(Language.tableName))
-    elseif feature.typeName == "CharacterSkillChoice" then
-        tableToItems(dmhub.GetTableVisible(Skill.tableName))
-    elseif feature.typeName == "CharacterSubclassChoice" then
-        tableToItems(dmhub.GetTableVisible(Class.tableName))
     end
 
     return next(items) and items or nil
@@ -68,38 +69,35 @@ function CBCharPanel._calcSelectedValue(choices, selected)
 end
 
 --- Create a panel displaying feature information for a single feature type
---- @param featureTypeInfo table
 --- @return Panel
-function CBCharPanel._statusFeature(featureTypeInfo)
+function CBCharPanel._statusEntryRow()
     local idLabel = gui.Label{
         classes = {"builder-base", "label", "charpanel", "builder-category"},
-        refreshDetail = function(element, info)
-            element.text = info.id
+        assignItem = function(element, entry)
+            element.text = entry.id
         end,
     }
     local statusLabel = gui.Label{
         classes = {"builder-base", "label", "charpanel", "builder-status"},
-        refreshDetail = function(element, info)
-            element.text = string.format("%d/%d", info.selected, info.available)
+        assignItem = function(element, entry)
+            element.text = string.format("%d/%d", entry.selected, entry.available)
         end,
     }
     local detailLabel = gui.Label{
         classes = {"builder-base", "label", "charpanel", "builder-detail"},
-        refreshDetail = function(element, info)
-            table.sort(info.selectedDetail)
-            element.text = table.concat(info.selectedDetail, "\n")
+        assignItem = function(element, entry)
+            element.text = table.concat(entry.selectedDetail, "\n")
         end
     }
     return gui.Panel{
         classes = {"builder-base", "panel-base", "charpanel", "builder-feature-content"},
-        data = featureTypeInfo,
-        refreshBuilderState = function(element, state)
-            local visible = element.data and (element.data.available or 0) > 0
+
+        assignItem = function(element, entry)
+            local visible = entry ~= nil
             element:SetClass("collapsed", not visible)
-            if visible then
-                element:FireEventTree("refreshDetail", element.data)
-            end
+            if not visible then element:HaltEventPropagation() end
         end,
+
         idLabel,
         statusLabel,
         detailLabel,
@@ -108,30 +106,9 @@ end
 
 --- Create a panel to display an element of builder status
 --- @param selector string The primary selector for querying state
---- @param getSelected function(character) Return the selected item on the character
+--- @param getSelected function(hero) Return the selected item on the hero
 --- @return Panel
 function CBCharPanel._statusItem(selector, getSelected)
-
-    local function translateTypeName(typeName)
-        local s = typeName:match("Character(.+)Choice")
-        if s == "Feat" then s = "Perk" end
-        return s
-    end
-
-    local function typeNameIsChoice(typeName)
-        return typeName == "CharacterDeityChoice"
-            or typeName == "CharacterFeatChoice"
-            or typeName == "CharacterFeatureChoice"
-            or typeName == "CharacterLanguageChoice"
-            or typeName == "CharacterSkillChoice"
-            or typeName == "CharacterSubclassChoice"
-    end
-
-    local function typeNameOrder(typeName)
-        -- The input is translated
-        local typeOrders = { Subclass = 1, Feature = 2, Skill = 3, Language = 4, Perk = 5, Deity = 6, }
-        return string.format("%d-%s", typeOrders[typeName] or 9, typeName)
-    end
 
     local headingText = _ucFirst(selector)
 
@@ -178,17 +155,19 @@ function CBCharPanel._statusItem(selector, getSelected)
         flow = "vertical",
         data = {
             heading = headingText,
-            featureTypes = {},
+            statusEntries = {},
         },
+
         create = function(element)
             element:FireEvent("refreshBuilderState", _getState(element))
         end,
+
         calculateComplete = function(element)
             local available = 0
             local selected = 0
-            for _,ft in pairs(element.data.featureTypes) do
-                available = available + ft.available
-                selected = selected + ft.selected
+            for _,entry in pairs(element.data.statusEntries) do
+                available = available + entry.available
+                selected = selected + entry.selected
             end
             local parent = element:FindParentWithClass("panelStatusController")
             if parent then
@@ -199,104 +178,84 @@ function CBCharPanel._statusItem(selector, getSelected)
                 })
             end
         end,
+
         calculateStatus = function(element, state)
-            local featureTypes = element.data.featureTypes
-            featureTypes = {
+            local hero = _getHero(state)
+            local featureCache = state:Get(selector .. ".featureCache")
+            local statusEntries = {
                 [headingText] = {
                     id = headingText,
-                    order = "0-".. headingText,
+                    order = "000-".. headingText,
                     available = 1,
                     selected = 0,
                     selectedDetail = {},
                 },
             }
-            local hero = _getHero(state)
-            local featureDetails = state:Get(selector .. ".featureDetails")
-            if hero and featureDetails then
-                local selectedItem = getSelected(hero)
-                if selectedItem then
-                    featureTypes[element.data.heading].selected = 1
-                    featureTypes[element.data.heading].selectedDetail = { selectedItem.name }
 
-                    local levelChoices = hero:GetLevelChoices()
-                    if levelChoices then
-                        for _,f in ipairs(featureDetails) do
-                            local guid = f.feature:try_get("guid")
-                            if guid and typeNameIsChoice(f.feature.typeName) then
-                                local typeName = translateTypeName(f.feature.typeName)                                
-                                if featureTypes[typeName] == nil then
-                                    featureTypes[typeName] = {
-                                        id = typeName,
-                                        order = typeNameOrder(typeName),
-                                        available = 0,
-                                        selected = 0,
-                                        selectedDetail = {},
-                                    }
-                                end
+            if hero and featureCache then
+                statusEntries[headingText].selected = 1
+                statusEntries[headingText].selectedDetail = { featureCache:GetSelectedName() }
 
-                                local numChoices = f.feature:NumChoices() or 1
-                                if numChoices < 1 then numChoices = 1 end
-                                featureTypes[typeName].available = featureTypes[typeName].available + numChoices
-
-                                if levelChoices[guid] then
-                                    local numSelected = #levelChoices[guid]
-
-                                    local detail = {}
-                                    local itemTable = CBCharPanel._getFeatureChoices(f.feature)
-                                    if itemTable then
-                                        numSelected = CBCharPanel._calcSelectedValue(itemTable, levelChoices[guid])
-                                        for _,id in ipairs(levelChoices[guid]) do
-                                            local item = itemTable[id]
-                                            if item then detail[#detail+1] = item.name end
-                                        end
-                                    end
-                                    featureTypes[typeName].selected = featureTypes[typeName].selected + numSelected
-                                    if #detail then
-                                        table.move(detail, 1, #detail, #featureTypes[typeName].selectedDetail + 1, featureTypes[typeName].selectedDetail)
-                                    end
-                                end
-
-                            end
-                        end
+                for _,item in ipairs(featureCache:GetSortedFeatures()) do
+                    local feature = featureCache:GetFeature(item.guid)
+                    local key = feature:GetCategoryOrder()
+                    if statusEntries[key] == nil then
+                        statusEntries[key] = {
+                            id = feature:GetCategory(),
+                            order = key,
+                            available = 0,
+                            selected = 0,
+                            selectedDetail = {},
+                        }
                     end
+                    local statusEntry = statusEntries[key]
+                    statusEntry.available = statusEntry.available + feature:GetNumChoices()
+                    statusEntry.selected = statusEntry.selected + feature:GetSelectedValue()
+                    local selectedNames = feature:GetSelectedNames()
+                    table.move(selectedNames, 1, #selectedNames, #statusEntry.selectedDetail + 1, statusEntry.selectedDetail)
+                    table.sort(statusEntry.selectedDetail)
                 end
             end
-            element.data.featureTypes = featureTypes
+
+            statusEntries = CharacterBuilder._toArray(statusEntries)
+            table.sort(statusEntries, function(a,b) return a.order < b.order end)
+
+            element.data.statusEntries = statusEntries
         end,
+
         reconcileChildren = function(element)
-            if element.data.featureTypes then
-                local children = element.children
-                local featureTypes = element.data.featureTypes
-                local numChildren = #children
-                local index = 0
+            local statusEntries = element.data.statusEntries
+            if not statusEntries then return end
 
-                for _,featureType in pairs(featureTypes) do
-                    index = index + 1
-                    if children[index] then
-                        children[index].data = featureType
-                    else
-                        children[index] = CBCharPanel._statusFeature(featureType)
-                    end
-                end
+            local children = element.children
+            local numEntries = #statusEntries
+            local numChildren = #children
 
-                for i = index + 1, numChildren do
-                    children[i].data = nil
-                end
+            -- Ensure we have enough children
+            for _ = numChildren + 1, numEntries do
+                element:AddChild(CBCharPanel._statusEntryRow())
+            end
 
-                table.sort(children, function(a,b)
-                    local aOrd = a.data and a.data.order or "999"
-                    local bOrd = b.data and b.data.order or "999"
-                    return aOrd < bOrd
-                end)
+            -- Refresh children reference after adding
+            children = element.children
 
-                element.children = children
+            -- Update children with corresponding status entries
+            for i, entry in ipairs(statusEntries) do
+                children[i]:FireEventTree("assignItem", entry)
+            end
+
+            -- Clear excess children
+            for i = numEntries + 1, #children do
+                children[i]:FireEventTree("assignItem", nil)
             end
         end,
+
         refreshBuilderState = function(element, state)
             element:FireEvent("calculateStatus", state)
             element:FireEvent("reconcileChildren")
             element:FireEvent("calculateComplete")
         end,
+
         setExpanded = function(element, expanded)
             element:SetClass("collapsed-anim", not expanded)
         end,
@@ -326,13 +285,18 @@ end
 
 function CBCharPanel._builderPanel(tabId)
 
-    local ancestryStatusItem = CBCharPanel._statusItem("ancestry", function(character)
-        return character:Race()
+    local ancestryStatusItem = CBCharPanel._statusItem("ancestry", function(hero)
+        return hero:Race()
     end)
 
-    local careerStatusItem = CBCharPanel._statusItem("career", function(character)
-        return character:Background()
+    local careerStatusItem = CBCharPanel._statusItem("career", function(hero)
+        return hero:Background()
     end)
+
+    local classStatusItem = CBCharPanel._statusItem("class", function(hero)
+        return hero:GetClass()
+    end)
+
     return gui.Panel {
         classes = {"builder-base", "panel-base", "charpanel", "builder-content"},
         data = {
@@ -349,6 +313,7 @@ function CBCharPanel._builderPanel(tabId)
 
         ancestryStatusItem,
         careerStatusItem,
+        classStatusItem,
     }
 end
 
@@ -828,10 +793,12 @@ function CBCharPanel._detailPanel()
     }
 
     local contentPanel = gui.Panel{
-        width = "100%",
-        height = "auto",
-        halign = "center",
+        classes = {"builder-base", "panel-base"},
+        width = "98%",
+        height = "90%",
+        halign = "left",
         valign = "top",
+        flow = "vertical",
         vscroll = true,
         data = {
             madeContent = {},
@@ -857,7 +824,7 @@ function CBCharPanel._detailPanel()
         tabPanel,
         contentPanel,
     }
-    
+
     return detailPanel
 end
 

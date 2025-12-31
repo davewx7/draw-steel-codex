@@ -57,6 +57,19 @@ function CharacterAncestryInheritanceChoice:Choices(numOption, existingChoices, 
 	return result
 end
 
+function CharacterAncestryInheritanceChoice:GetOptions()
+    local options = {}
+    local choices = self:Choices()
+    for _,item in ipairs(choices) do
+        options[#options+1] = {
+            guid = item.id,
+            name = item.text,
+            unique = true,
+        }
+    end
+    return options
+end
+
 function CharacterAncestryInheritanceChoice:NumChoices(creature)
 	return 1
 end

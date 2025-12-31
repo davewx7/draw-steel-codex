@@ -321,6 +321,12 @@ function GameHud.CreateRollDialog(self)
             brightness = 3.0,
             transitionTime = 0.2,
         },
+        {
+            selectors = {"ai"},
+            --hidden = 1,
+            y = -10000,
+            priority = 1000,
+        },
     }
 
     local title = gui.Label {
@@ -1007,7 +1013,7 @@ function GameHud.CreateRollDialog(self)
 
             local maintarget = multitargets[GetCurrentMultiTarget()]
             if maintarget == nil or #maintarget.triggers == 0 then
-                element:SetClass("collapsed", true)
+                element:SetClass("collapsed", false)
                 return
             end
 
@@ -2710,6 +2716,8 @@ function GameHud.CreateRollDialog(self)
 
                 RecalculateMultiTargets()
 
+                resultPanel:SetClass("ai", (creature ~= nil and creature._tmp_aicontrol > 0) or false)
+
                 if options.numPrompts ~= nil and options.numPrompts > 1 then
                     rollAllPromptsCheck.value = true
                     rollAllPromptsCheck.data.SetText(string.format("Roll all %d prompts", options.numPrompts))
@@ -2792,10 +2800,78 @@ function GameHud.CreateRollDialog(self)
                     resultPanel:SetClassTree("finishedRolling", false)
                     g_holdingRollOpen = true
 
+
                     proceedAfterRollButton.events.press = function()
                         resultPanel:SetClass('hidden', true)
                         RelinquishPanel()
                         showingDialog = false
+                    end
+
+                    print("AI:: SETTING UP EVENT", creature ~= nil and creature._tmp_aicontrol or 0)
+                    if creature ~= nil and creature._tmp_aicontrol > 0 then
+                        local TryToProceed
+                        local m_timerState = nil
+
+                        TryToProceed = function()
+                            if resultPanel.valid and showingDialog then
+
+                                local tokens = dmhub.allTokens
+                                local haveTriggers = false
+
+                                for _,tok in ipairs(tokens) do
+                                    if tok.playerControlled then
+                                        local triggers = tok.properties:GetAvailableTriggers(true)
+                                        for _,trigger in pairs(triggers or {}) do
+                                            if trigger.powerRollModifier then
+                                                haveTriggers = true
+                                                break
+                                            end
+                                        end
+                                    end
+                                end
+
+                                if haveTriggers and (m_timerState == nil or (dmhub.Time() < m_timerState.expire) or m_timerState.paused) then
+                                    local t = dmhub.Time()
+                                    if m_timerState == nil then
+                                        print("AI:: SET TIMER STATE")
+                                        m_timerState = {
+                                            start = t,
+                                            current = t,
+                                            expire = t + 5,
+                                            text = "Triggers available. Click to pause.",
+                                            callback = function()
+                                                if m_timerState ~= nil then
+                                                    if m_timerState.paused then
+                                                        UpdateTriggerReactionPanel(nil)
+                                                        if proceedAfterRollButton.valid then
+                                                            proceedAfterRollButton:FireEventTree("press")
+                                                        end
+                                                        return
+                                                    else
+                                                        m_timerState.text = "Triggers available. Click to dismiss."
+                                                        m_timerState.paused = true
+                                                        UpdateTriggerReactionPanel(m_timerState)
+                                                    end
+                                                end
+                                            end,
+                                        }
+                                    end
+
+                                    m_timerState.current = t
+                                    UpdateTriggerReactionPanel(m_timerState)
+                                    dmhub.Schedule(0.2, function()
+                                        TryToProceed()
+                                    end)
+                                else
+                                    UpdateTriggerReactionPanel(nil)
+                                    proceedAfterRollButton:FireEventTree("press")
+                                end
+                            end
+                        end
+                        --AI controlled creature, we auto-press the proceed button after a short delay.
+                        dmhub.Schedule(3.0, function()
+                            TryToProceed()
+                        end)
                     end
                 else
                     resultPanel:SetClass('hidden', true)
@@ -3078,15 +3154,23 @@ function GameHud.CreateRollDialog(self)
                         print("ROLL:: COMPLETE")
                         m_rollInfo = rollInfo
 
+                            print("AI:: IS COMPLETE, SHOWING DIALOG:", showingDialog)
                         if showingDialog then
                             resultPanel:SetClassTree("rolling", false)
                             resultPanel:SetClassTree("finishedRolling", true)
 
                             proceedAfterRollButton.events.press = function()
+                                print("AI:: PRESSED PROCEED AFTER ROLL")
                                 resultPanel:SetClass('hidden', true)
                                 RelinquishPanel()
 
                                 completeFunction(rollInfo)
+                            end
+
+                            print("AI:: ROLL COMPLETE...")
+                            if creature ~= nil and creature._tmp_aicontrol > 0 then
+                            print("AI:: ROLL PRESS PROCEED...")
+                                proceedAfterRollButton:FireEvent("press")
                             end
 
                             return

@@ -802,7 +802,7 @@ function equipment:RenderToMarkdown(options)
         tokens[#tokens+1] = self.description
     end
 
-    if not options.noninteractive then
+    if (not options.noninteractive) and dmhub.isDM then
         tokens[#tokens+1] = "\n\n:<>"
         for key,token in pairs(Party.GetPlayerCharacters()) do
             if token.name ~= "" then

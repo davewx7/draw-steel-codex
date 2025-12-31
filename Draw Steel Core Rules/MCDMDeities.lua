@@ -283,6 +283,27 @@ function CharacterDeityChoice:Choices(numOption, existingChoices, creature)
     return Deity.GetDropdownList()
 end
 
+local g_optCache = {}
+dmhub.RegisterEventHandler("refreshTables", function(keys)
+    g_optCache = {}
+end)
+function CharacterDeityChoice:GetOptions()
+    if #g_optCache > 0 then return g_optCache end
+    local options = {}
+
+    for _,item in pairs(dmhub.GetTableVisible(Deity.tableName)) do
+        options[#options+1] = {
+            guid = item.id,
+            name = item.name,
+            unique = true
+        }
+    end
+    table.sort(options, function(a,b) return a.name < b.name end)
+
+    g_optCache = options
+    return g_optCache
+end
+
 function CharacterDeityChoice:NumChoices(creature)
     return 1
 end
@@ -469,6 +490,20 @@ function CharacterDomainChoice:Choices(numOption, existingChoices, creature)
     end
 
     return result
+end
+
+function CharacterDomainChoice:GetOptions()
+    local items = self:Choices()
+    local options = {}
+    for i,item in ipairs(items) do
+        options[i] = {
+            guid = item.id,
+            name = item.text,
+            unique = true,
+        }
+    end
+    table.sort(options, function(a,b) return a.name < b.name end)
+    return options
 end
 
 function CharacterDomainChoice:NumChoices(creature)

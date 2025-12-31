@@ -344,7 +344,8 @@ CharacterBuilder.RegisterSelector{
 CharacterBuilder.RegisterSelector{
     id = "class",
     ord = 6,
-    selector = CBSelectors._class
+    selector = CBSelectors._class,
+    detail = CBClassDetail.CreatePanel,
 }
 
 CharacterBuilder.RegisterSelector{

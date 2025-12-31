@@ -607,18 +607,20 @@ function CharSheet.FeatureDetailsPanel(params)
 			local token = CharacterSheet.instance.data.info.token
 			for i,featureInfo in ipairs(g_characterFeatures) do
 				local exclude = false
-                print("MATCH:: matching against criteria", element.data.criteria)
+                --print("MATCH:: matching", featureInfo.feature.name, "against criteria", element.data.criteria)
 				for k,item in pairs(element.data.criteria) do
 					if k == "minlevel" or k == "maxlevel" then
+                        local minlevel = element.data.criteria.minlevel or -1
+                        local maxlevel = element.data.criteria.maxlevel or 1000
 						local match = false
 						for i,level in ipairs(featureInfo.levels or {}) do
-							if (k == "minlevel" and level >= item) or (k == "maxlevel" and level <= item) then
+							if level >= minlevel and level <= maxlevel then
 								match = true
 								break
 							end 
 						end
 
-                        print("MATCH:: HAVE ", k, item, "levels =", featureInfo.levels or {}, "match =", match)
+                        --print("MATCH:: HAVE ", k, item, "levels =", featureInfo.levels or {}, "match =", match)
 
 						if not match then
 							exclude = "Level does not match for levels " .. json(featureInfo.levels or {})

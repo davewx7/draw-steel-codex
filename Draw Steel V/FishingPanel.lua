@@ -188,3 +188,33 @@ CreateFishingPanel = function(options)
 
     return fishingPanel
 end
+
+---@class RichFishing
+RichFishing = RegisterGameType("RichFishing", "RichTag")
+RichFishing.tag = "fishing"
+
+function RichFishing.Create()
+    return RichFishing.new {}
+end
+
+function RichFishing.CreateDisplay(self)
+    return CreateFishingPanel{}
+end
+
+function RichFishing.CreateEditor(self)
+    local resultPanel
+    resultPanel = gui.Label{
+        flow = "vertical",
+        width = 96,
+        height = "100%",
+        text = "Fishing Editor",
+        fontSize = 16,
+        bgimage = true,
+        bgcolor = "black",
+        color = "white",
+    }
+    return resultPanel
+end
+
+
+MarkdownDocument.RegisterRichTag(RichFishing)

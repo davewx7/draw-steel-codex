@@ -313,7 +313,7 @@ function GameHud:ViewSign(imageid)
 end
 
 --renders a compendium entry in modal form.
-function GameHud:ViewCompendiumEntryModal(entry, token)
+function GameHud:ViewCompendiumEntryModal(entry, token, options)
 	local panel = gui.Panel{
 		width = "100%",
 		height = "100%",
@@ -349,7 +349,7 @@ function GameHud:ViewCompendiumEntryModal(entry, token)
 				height = "auto",
 				halign = "left",
 				hmargin = 4,
-				entry:Render({}, token),
+				entry:Render(options, token),
 			},
 		}
 	}

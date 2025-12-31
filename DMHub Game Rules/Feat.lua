@@ -310,43 +310,57 @@ function CharacterFeatChoice.CreateNew()
 end
 
 local g_tagCache = {}
+local g_optCache = {}
 
 dmhub.RegisterEventHandler("refreshTables", function(keys)
 	g_tagCache = {}
-
+	g_optCache = {}
 end)
 
-function CharacterFeatChoice:Choices(numOption, existingChoices, creature)
+function CharacterFeatChoice:_cache()
+	if g_tagCache[self.tag] ~= nil and g_optCache[self.tag] ~= nil then return end
 
-	local cachedResult = g_tagCache[self.tag]
-	if cachedResult ~= nil then
-		return cachedResult
-	end
+	local tags = self:Tags()
 
-    local tags = self:Tags()
-
-	local result = {}
+	local tagCache = {}
+	local optCache = {}
 
 	local featsTable = dmhub.GetTable(CharacterFeat.tableName)
 	for k,feat in pairs(featsTable) do
         for _,tag in ipairs(tags) do
             if feat:HasTag(tag) then
-                result[#result+1] = {
+                tagCache[#tagCache+1] = {
                     id = feat.id,
                     text = feat.name,
                     unique = true, --this means there will be checking in the builder so if we already have this id selected somewhere it won't be shown here.
                     prerequisite = cond(feat.prerequisite ~= "", feat.prerequisite),
                     hidden = feat:try_get("hidden"),
                 }
+				if not feat:try_get("hidden") then
+					optCache[#optCache+1] = {
+						guid = feat.id,
+						name = feat.name,
+						unique = true,
+						prerequisite = cond(feat.prerequisite ~= "", feat.prerequisite),
+					}
+				end
                 break
             end
         end
-		
 	end
 
-	g_tagCache[self.tag] = result
+	g_tagCache[self.tag] = tagCache
+	g_optCache[self.tag] = optCache
+end
 
-	return result
+function CharacterFeatChoice:Choices(numOption, existingChoices, creature)
+	if g_tagCache[self.tag] == nil then self:_cache() end
+	return g_tagCache[self.tag]
+end
+
+function CharacterFeatChoice:GetOptions(choices)
+	if g_optCache[self.tag] == nil then self:_cache() end
+	return g_optCache[self.tag]
 end
 
 function CharacterFeatChoice:GetDescription()

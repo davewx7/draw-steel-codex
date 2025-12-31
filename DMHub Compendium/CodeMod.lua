@@ -172,6 +172,8 @@ CreateEditor = function(panelArgs)
 		width = 240,
 		height = 30,
 		fontSize = 16,
+        sort = true,
+        
 		refreshMod = function(element)
 			local options = {
 				{

@@ -104,6 +104,19 @@ function character:CharacterType()
 	return nil
 end
 
+function creature:GetNotesForTable(tableid)
+	if self:has_key("notes") == false then return nil end
+
+	local notes = {}
+	for _,note in ipairs(self.notes) do
+		if note.tableid == tableid then
+			notes[#notes+1] = note
+		end
+	end
+
+	return notes
+end
+
 function creature:GetNoteForTableRow(tableid, rowid)
 	if self:has_key("notes") == false then
 		return nil
@@ -159,6 +172,15 @@ function creature:RemoveNoteForTableRow(tableid, rowid)
 		if note.tableid == tableid and note.rowid == rowid then
 			table.remove(self.notes, i)
 			return
+		end
+	end
+end
+
+function creature:RemoveNotesForTable(tableid)
+	if self:has_key("notes") == false then return end
+	for i = #self.notes, 1, -1 do
+		if self.notes[i].tableid == tableid then
+			table.remove(self.notes, i)
 		end
 	end
 end

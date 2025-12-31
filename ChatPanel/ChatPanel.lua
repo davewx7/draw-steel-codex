@@ -58,6 +58,7 @@ local CreateObjectMessagePanel = function(message)
 	local options = {
 		summary = true,
         width = 340,
+        noninteractive = true,
 	}
 	local params = {}
 	if message.properties ~= nil then

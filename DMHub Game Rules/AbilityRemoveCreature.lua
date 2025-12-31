@@ -213,7 +213,7 @@ function ActivatedAbilityRemoveCreatureBehavior:Cast(ability, casterToken, targe
     for i,target in ipairs(targets) do
 
         local targetPasses = true
-        if self.waitForAbilitiesToFinish then
+        if self.waitForAbilitiesToFinish and (not target.token.properties.minion) then
             local castInfo = ActivatedAbility.CurrentCastInfo() or {}
             castInfo.activity = "reaping"
 

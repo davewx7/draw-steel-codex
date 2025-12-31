@@ -566,7 +566,8 @@ function CharSheet.FollowersInnerPanel()
                                 classes = { "followerLabel"},
                                 width = "auto",
                                 height = "auto",
-                                text = follower and follower.properties and follower.properties.followerType and string.upper_first(follower.properties.followerType) or "Unknown",
+                                text = follower and follower.properties and follower.properties:has_key("followerType") and follower.properties.followerType and string.upper_first(follower.properties.followerType) or "Unknown",
+
 
                                 refreshAll = function(element)
                                     if follower and follower.properties and follower.properties.followerType then

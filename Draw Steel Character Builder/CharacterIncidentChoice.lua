@@ -1,0 +1,133 @@
+--[[
+    CharacterIncidentChoice
+
+    Make a background characteristic / roll table behave like
+    a feature choice for purposes of the character builder.
+]]
+CharacterIncidentChoice = RegisterGameType("CharacterIncidentChoice", "CharacterChoice")
+CharacterIncidentChoice.__index = CharacterIncidentChoice
+
+CharacterIncidentOption = RegisterGameType("CharacterIncidentOption")
+CharacterIncidentOption.__index = CharacterIncidentOption
+
+CharacterIncidentChoice.name = "Incident"
+CharacterIncidentChoice.description = "Inciting Incident"
+CharacterIncidentChoice.numChoices = 1
+CharacterIncidentChoice.costsPoints = false
+CharacterIncidentChoice.hasRoll = true
+
+--- Contruct from a background characteristic
+--- @param c BackgroundCharacteristic
+--- @return CharacterIncidentChoice
+function CharacterIncidentChoice:new(c)
+
+    local instance = setmetatable({}, self)
+
+    local options = {}
+    local rollTable = c:GetRollTable()
+    local rollInfo = rollTable:CalculateRollInfo()
+    for i,row in ipairs(rollTable.rows) do
+        options[#options+1] = CharacterIncidentOption:new(row, rollInfo.rollRanges[i])
+    end
+
+    instance.guid = c.tableid
+    instance.name = c:Name()
+    instance.description = (rollTable.details and #rollTable.details) and rollTable.details or c:Name()
+    instance.options = options
+    instance.characteristic = c
+
+    return instance
+end
+
+--- Construct from data - a roll table entry
+--- @param row
+--- @param rollRange
+--- @return CharacterIncidentOption
+function CharacterIncidentOption:new(row, rollRange)
+    local instance = setmetatable({}, self)
+
+    local function parseString(str)
+        local name, description
+
+        -- Try bold pattern: **Name:** or **Name:**: or **Name**
+        local result = regex.MatchGroups(str, "^(?:\\*\\*|__)(?<name>.+?)(?::)?(?:\\*\\*|__)(?::)?\\s*(?<description>.*)$")
+        if result and result.name then
+            name = result.name
+            description = result.description or ""
+        else
+            -- Try colon-separated: Name: description
+            result = regex.MatchGroups(str, "^(?<name>[^:]+):\\s*(?<description>.*)$")
+            if result and result.name then
+                name = result.name
+                description = result.description or ""
+            else
+                -- No structure - take first 30 chars
+                if #str > 30 then
+                    name = str:sub(1, 30)
+                    description = str:sub(31)
+                else
+                    name = str
+                    description = ""
+                end
+            end
+        end
+
+        return name, description
+    end
+
+    local function rangeText(rollRange)
+        if rollRange == nil or rollRange.min == nil then return "--" end
+        if rollRange.min == rollRange.max then return tostring(round(rollRange.min)) end
+        return string.format("%d%s%d", round(rollRange.min), Styles.emdash, round(rollRange.max))
+    end
+
+    local name, description = parseString(row.value:ToString())
+    local range = rangeText(rollRange)
+    name = string.format("%s: %s", range, name)
+
+    instance.guid = row.id
+    instance.name = name
+    instance.description = description
+    instance.row = row
+    instance.rollRange = rollRange
+    instance.unique = true
+
+    return instance
+end
+
+function CharacterIncidentChoice:CanRepeat()
+    return false
+end
+
+function CharacterIncidentChoice:Choices(numOption, existingChoices, creature)
+    return self.options
+end
+
+function CharacterIncidentChoice:FillChoices(choices, result)
+end
+
+function CharacterIncidentChoice:FillFeaturesRecursive(choices, result)
+end
+
+function CharacterIncidentChoice:GetDescription()
+    return self.description
+end
+
+function CharacterIncidentChoice:GetOptions(choices)
+    return self.options
+end
+
+function CharacterIncidentChoice:NumChoices(creature)
+    return self.numChoices
+end
+
+function CharacterIncidentChoice:VisitRecursive(fn)
+    fn(self)
+    for _,o in ipairs(self.options) do
+        o:VisitRecursive(fn)
+    end
+end
+
+function CharacterIncidentChoice:CreateEditor(classOrRace, params)
+    return nil
+end

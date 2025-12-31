@@ -21,36 +21,47 @@ function CharacterSkillChoice.Create(options)
 end
 
 local g_tagCache = {}
+local g_optCache = {}
 
 dmhub.RegisterEventHandler("refreshTables", function(keys)
 	g_tagCache = {}
-
+    g_optCache = {}
 end)
 
-function CharacterSkillChoice:Choices(numOption, existingChoices, creature)
+function CharacterSkillChoice:_cache()
+	if g_tagCache[self.categories] ~= nil and g_optCache[self.categories] ~= nil then return end
 
-	local cachedResult = g_tagCache[self.categories]
-	if cachedResult ~= nil then
-		return cachedResult
-	end
-
-	local result = {}
+    local tags = {}
+    local options = {}
 
 	local skillsTable = dmhub.GetTable(Skill.tableName)
 	for k,skill in pairs(skillsTable) do
 		if (not skill:try_get("hidden", false)) and (self.categories[skill.category] or self.individualSkills[k]) then
-			result[#result+1] = {
+			tags[#tags+1] = {
 				id = k,
 				text = skill.name,
 				unique = true, --this means there will be checking in the builder so if we already have this id selected somewhere it won't be shown here.
 			}
+            options[#options+1] = {
+                guid = k,
+                name = skill.name,
+                unique = true,
+            }
 		end
-		
 	end
 
-	g_tagCache[self.categories] = result
+	g_tagCache[self.categories] = tags
+    g_optCache[self.categories] = options
+end
 
-	return result
+function CharacterSkillChoice:Choices(numOption, existingChoices, creature)
+	if g_tagCache[self.categories] == nil then self:_cache() end
+	return g_tagCache[self.categories]
+end
+
+function CharacterSkillChoice:GetOptions(choices)
+    if g_optCache[self.categories] == nil then self:_cache() end
+    return g_optCache[self.categories]
 end
 
 function CharacterSkillChoice:GetDescription()
