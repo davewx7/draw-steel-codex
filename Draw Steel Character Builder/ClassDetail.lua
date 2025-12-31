@@ -5,7 +5,7 @@ CBClassDetail = RegisterGameType("CBClassDetail")
 
 local mod = dmhub.GetModLoading()
 
-local SELECTOR = "class"
+local SELECTOR = CharacterBuilder.SELECTOR.CLASS
 local INITIAL_CATEGORY = "overview"
 local AVAILABLE_WITHOUT_CLASS = {overview = true}
 

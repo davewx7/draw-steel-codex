@@ -1,5 +1,22 @@
 --[[
-    Selector panels
+    The UI in which the user selects pretty much any
+    type of feature - skills, languages, really anything
+    derived from CharacterChoice.
+
+    Anything derived from CharacterChoice should plug in
+    to this automagically, if you ensure you follow the
+    guidelines:
+      - Implement :GetDescription()
+      - Implement :GetOptions()
+      - Implement :Choices()
+      - Name the class Character___Choice or update the
+        translation list in _deriveCategory in
+        FeatureCache.lua.
+      - Add it to the sort order list in _deriveOrder in
+        FeatureCache.lua.
+      - If selections aren't stored in levelChoices, add
+        apply and remove methods to the selectionHandlers
+        list in FeatureCache.lua.
 ]]
 CBFeatureSelector = RegisterGameType("CBFeatureSelector")
 

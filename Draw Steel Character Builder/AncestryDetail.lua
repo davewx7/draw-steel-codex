@@ -5,7 +5,7 @@ CBAncestryDetail = RegisterGameType("CBAncestryDetail")
 
 local mod = dmhub.GetModLoading()
 
-local SELECTOR = "ancestry"
+local SELECTOR = CharacterBuilder.SELECTOR.ANCESTRY
 local INITIAL_CATEGORY = "overview"
 local AVAILABLE_WITHOUT_ANCESTRY = {overview = true, lore = true}
 

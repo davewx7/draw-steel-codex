@@ -80,6 +80,17 @@ CharacterBuilder = RegisterGameType("CharacterBuilder")
 CharacterBuilder.CONTROLLER_CLASS = "builderPanel"
 CharacterBuilder.ROOT_CHAR_SHEET_CLASS = "characterSheetHarness"
 
+CharacterBuilder.SELECTOR = {
+    BACK        = "back",
+    CHARACTER   = "character",
+    ANCESTRY    = "ancestry",
+    CULTURE     = "culture",
+    CAREER      = "career",
+    CLASS       = "class",
+    KIT         = "kit",
+    COMPLICATION = "complication",
+}
+
 CharacterBuilder.STRINGS = {}
 
 CharacterBuilder.STRINGS.ANCESTRY = {}
@@ -109,10 +120,12 @@ While all your character creation decisions bear narrative weight, none influenc
 CharacterBuilder.Selectors = {}
 CharacterBuilder.SelectorLookup = {}
 
+--- Clear all registered builder tabs
 function CharacterBuilder.ClearBuilderTabs()
     CharacterBuilder.Selectors = {}
 end
 
+--- Register a selector for the builder
 function CharacterBuilder.RegisterSelector(selector)
     CharacterBuilder.Selectors[#CharacterBuilder.Selectors+1] = selector
     CharacterBuilder.SelectorLookup[selector.id] = selector
@@ -136,43 +149,43 @@ end
 --- @param selectorId string The selector under which to find the option
 --- @param tableId string The guid of the roll table we're looking for
 --- @return boolean
-function CharacterBuilder._careerCharacteristicAvailable(state, selectorId, tableId)
-    local careerItem = state:Get(selectorId .. ".selectedItem")
-    if careerItem then
-        for _,c in ipairs(careerItem:try_get("characteristics", {})) do
-            if c:try_get("tableid") == tableId then return true end
-        end
-    end
-    return false
-end
+-- function CharacterBuilder._careerCharacteristicAvailable(state, selectorId, tableId)
+--     local careerItem = state:Get(selectorId .. ".selectedItem")
+--     if careerItem then
+--         for _,c in ipairs(careerItem:try_get("characteristics", {})) do
+--             if c:try_get("tableid") == tableId then return true end
+--         end
+--     end
+--     return false
+-- end
 
 --- Determine if we can find the specified item ID in the feature ID in the character's level choices
 --- @param character character
 --- @param featureId string
 --- @param itemId string
 --- @return boolean
-function CharacterBuilder._characterHasLevelChoice(character, featureId, itemId)
-    if character then
-        local levelChoices = character:GetLevelChoices()
-        if levelChoices and levelChoices[featureId] then
-            for _,selectedId in ipairs(levelChoices[featureId]) do
-                if itemId == selectedId then return true end
-            end
-        end
-    end
-    return false
-end
+-- function CharacterBuilder._characterHasLevelChoice(character, featureId, itemId)
+--     if character then
+--         local levelChoices = character:GetLevelChoices()
+--         if levelChoices and levelChoices[featureId] then
+--             for _,selectedId in ipairs(levelChoices[featureId]) do
+--                 if itemId == selectedId then return true end
+--             end
+--         end
+--     end
+--     return false
+-- end
 
 --- Return the count of items in a keyed table
 --- @param t table
 --- @return integer numItems
-function CharacterBuilder._countKeyedTable(t)
-    local numItems = 0
-    for _ in pairs(t) do
-        numItems = numItems + 1
-    end
-    return numItems
-end
+-- function CharacterBuilder._countKeyedTable(t)
+--     local numItems = 0
+--     for _ in pairs(t) do
+--         numItems = numItems + 1
+--     end
+--     return numItems
+-- end
 
 --- Fires an event on the main builder panel
 --- @param element Panel The element calling this method
@@ -230,6 +243,7 @@ function CharacterBuilder._getToken(source)
     return nil
 end
 
+--- @return boolean
 function CharacterBuilder._inCharSheet(element)
     return CharacterBuilder._getCharacterSheet(element) ~= nil
 end
@@ -249,11 +263,13 @@ function CharacterBuilder._safeGet(item, propertyName, defaultValue)
     return value
 end
 
+--- @return table
 function CharacterBuilder._sortArrayByProperty(items, propertyName)
     table.sort(items, function(a,b) return a[propertyName] < b[propertyName] end)
     return items
 end
 
+--- @return string
 function CharacterBuilder._stripSignatureTrait(str)
     local result = regex.MatchGroups(str, "(?i)^signature\\s+trait:?\\s*(?<name>.*)$")
     if result and result.name then return result.name end
@@ -297,6 +313,7 @@ function CharacterBuilder._trimToLength(str, maxLength, stopAtNewline)
     return str:sub(1, maxLength) .. "..."
 end
 
+--- @return string
 function CharacterBuilder._ucFirst(str)
     if str and #str > 0 then
         return str:sub(1,1):upper() .. str:sub(2)
@@ -426,69 +443,6 @@ function CharacterBuilder._makeFeatureRegistry(options)
 
     return nil
 end
-
---- Create a registry entry for a feature - a button and an editor panel
---- @parameter feature table{category, catOrder, order, panelFn, feature}
---- @parameter selectorId string The selector this is a category under
---- @parameter selectedId string The unique identifier of the item associated with the feature
---- @parameter checkAvailable function(state, selectorId, featureId)
---- @parameter getSelected function(character)
---- @return table{button,panel}|nil
--- function CharacterBuilder._makeFeatureRegistry(options)
---     local featureDef = options.feature
---     local feature = featureDef.feature
---     local selectorId = options.selectorId
---     local selectedId = options.selectedId
---     local checkAvailable = options.checkAvailable or CharacterBuilder._featureAvailable
---     local getSelected = options.getSelected
-
---     local featurePanel = featureDef.panelFn(feature)
-
---     if featurePanel then
---         return {
---             button = CharacterBuilder._makeCategoryButton{
---                 text = CharacterBuilder._stripSignatureTrait(feature.name),
---                 data = {
---                     featureId = feature:try_get("guid", feature:try_get("tableid")),
---                     selectedId = selectedId,
---                     order = featureDef.order,
---                 },
---                 click = function(element)
---                     CharacterBuilder._fireControllerEvent(element, "updateState", {
---                         key = selectorId .. ".category.selectedId",
---                         value = element.data.featureId
---                     })
---                 end,
---                 refreshBuilderState = function(element, state)
---                     local tokenSelected = getSelected(CharacterBuilder._getHero(state)) or "nil"
---                     local isVisible = tokenSelected == element.data.selectedId and checkAvailable(state, selectorId, element.data.featureId)
---                     element:FireEvent("setAvailable", isVisible)
---                     element:FireEvent("setSelected", element.data.featureId == state:Get(selectorId .. ".category.selectedId"))
---                     element:SetClass("collapsed", not isVisible)
---                 end,
---             },
---             panel = gui.Panel{
---                 classes = {"featurePanel", "builder-base", "panel-base", "collapsed"},
---                 width = "100%",
---                 height = "98%",
---                 flow = "vertical",
---                 valign = "top",
---                 halign = "center",
---                 tmargin = 12,
---                 data = {
---                     featureId = feature.guid,
---                 },
---                 refreshBuilderState = function(element, state)
---                     local isVisible = element.data.featureId == state:Get(selectorId .. ".category.selectedId")
---                     element:SetClass("collapsed", not isVisible)
---                 end,
---                 featurePanel,
---             },
---         }
---     end
-
---     return nil
--- end
 
 --- Build a Select button, forcing consistent styling
 --- @param options ButtonOptions 

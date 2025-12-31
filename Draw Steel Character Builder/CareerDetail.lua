@@ -5,7 +5,7 @@ CBCareerDetail = RegisterGameType("CBCareerDetail")
 
 local mod = dmhub.GetModLoading()
 
-local SELECTOR = "career"
+local SELECTOR = CharacterBuilder.SELECTOR.CAREER
 local INITIAL_CATEGORY = "overview"
 local AVAILABLE_WITHOUT_CAREER = {overview = true}
 

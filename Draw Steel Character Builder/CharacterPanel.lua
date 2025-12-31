@@ -9,6 +9,7 @@ local _getToken = CharacterBuilder._getToken
 local _ucFirst = CharacterBuilder._ucFirst
 
 local INITIAL_TAB = "description"
+local SEL = CharacterBuilder.SELECTOR
 
 --- Character Panel Class
 CBCharPanel = RegisterGameType("CBCharPanel")
@@ -285,15 +286,15 @@ end
 
 function CBCharPanel._builderPanel(tabId)
 
-    local ancestryStatusItem = CBCharPanel._statusItem("ancestry", function(hero)
+    local ancestryStatusItem = CBCharPanel._statusItem(SEL.ANCESTRY, function(hero)
         return hero:Race()
     end)
 
-    local careerStatusItem = CBCharPanel._statusItem("career", function(hero)
+    local careerStatusItem = CBCharPanel._statusItem(SEL.CAREER, function(hero)
         return hero:Background()
     end)
 
-    local classStatusItem = CBCharPanel._statusItem("class", function(hero)
+    local classStatusItem = CBCharPanel._statusItem(SEL.CLASS, function(hero)
         return hero:GetClass()
     end)
 

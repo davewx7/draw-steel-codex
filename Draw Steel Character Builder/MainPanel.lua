@@ -3,13 +3,12 @@
 ]]
 local _getHero = CharacterBuilder._getHero
 local _getToken = CharacterBuilder._getToken
+local SEL = CharacterBuilder.SELECTOR
 
 --- Minimal implementation for the center panel. Non-reactive.
 --- @return Panel
 function CharacterBuilder._detailPanel()
-    local detailPanel
-
-    detailPanel = gui.Panel{
+    return gui.Panel{
         id = "detailPanel",
         classes = {"detailPanel", "panel-base", "builder-base"},
         width = CBStyles.SIZES.CENTER_PANEL_WIDTH,
@@ -17,8 +16,6 @@ function CharacterBuilder._detailPanel()
         valign = "center",
         borderColor = "blue",
     }
-
-    return detailPanel
 end
 
 --- Create the main panel for the builder.
@@ -68,7 +65,7 @@ function CharacterBuilder.CreatePanel()
         },
 
         applyCurrentAncestry = function(element)
-            local ancestryId = element.data.state:Get("ancestry.selectedId")
+            local ancestryId = element.data.state:Get(SEL.ANCESTRY .. ".selectedId")
             if ancestryId then
                 local hero = _getHero(element.data.state)
                 if hero then
@@ -79,7 +76,7 @@ function CharacterBuilder.CreatePanel()
         end,
 
         applyCurrentCareer = function(element)
-            local careerId = element.data.state:Get("career.selectedId")
+            local careerId = element.data.state:Get(SEL.CAREER .. ".selectedId")
             if careerId then
                 local hero = _getHero(element.data.state)
                 if hero then
@@ -90,7 +87,7 @@ function CharacterBuilder.CreatePanel()
         end,
 
         applyCurrentClass = function(element)
-            local classId = element.data.state:Get("class.selectedId")
+            local classId = element.data.state:Get(SEL.CLASS .. ".selectedId")
             if classId then
                 local hero = _getHero(element.data.state)
                 if hero then
@@ -105,7 +102,6 @@ function CharacterBuilder.CreatePanel()
         end,
 
         applyLevelChoice = function(element, info)
-            -- TODO: Make the feature use the wrapper
             local feature = info.feature
             local hero = _getHero(element.data.state)
             if hero then
@@ -272,21 +268,24 @@ function CharacterBuilder.CreatePanel()
 
                     -- TODO: Remaining data stored into state
 
+                    -- Always cache levelChoices last. Other actions depend
+                    -- on determining the difference between cache and current.
                     element:FireEvent("cachePerks")
                     element:FireEvent("cacheLevelChoices")
 
                     element:FireEventTree("refreshBuilderState", element.data.state)
                 end
             end
-            -- This should never be processed by children. Use refreshBuilderState instead.
+            -- This event should never be processed by children.
+            -- Use refreshBuilderState instead.
             element:HaltEventPropagation()
         end,
 
         selectAncestry = function(element, ancestryId, noFire)
             local state = element.data.state
 
-            local cachedAncestryId = state:Get("ancestry.selectedId")
-            local cachedInheritedAncestryId = state:Get("ancestry.inheritedId")
+            local cachedAncestryId = state:Get(SEL.ANCESTRY .. ".selectedId")
+            local cachedInheritedAncestryId = state:Get(SEL.ANCESTRY .. ".inheritedId")
             local cachedLevelChoices = state:Get("levelChoices")
 
             local hero = _getHero(state)
@@ -300,7 +299,7 @@ function CharacterBuilder.CreatePanel()
             if not (ancestryChanged or levelChoicesChanged) then return end
 
             local newState = {
-                { key = "ancestry.selectedId", value = ancestryId },
+                { key = SEL.ANCESTRY .. ".selectedId", value = ancestryId },
             }
             local ancestryItem = dmhub.GetTableVisible(Race.tableName)[ancestryId]
             if ancestryItem then
@@ -309,9 +308,9 @@ function CharacterBuilder.CreatePanel()
 
                 local featureCache = CBFeatureCache:new(hero, ancestryId, ancestryItem.name, featureDetails)
 
-                newState[#newState+1] = { key = "ancestry.selectedItem", value = ancestryItem }
-                newState[#newState+1] = { key = "ancestry.inheritedId", value = inheritedAncestryId }
-                newState[#newState+1] = { key = "ancestry.featureCache", value = featureCache }
+                newState[#newState+1] = { key = SEL.ANCESTRY .. ".selectedItem", value = ancestryItem }
+                newState[#newState+1] = { key = SEL.ANCESTRY .. ".inheritedId", value = inheritedAncestryId }
+                newState[#newState+1] = { key = SEL.ANCESTRY .. ".featureCache", value = featureCache }
             end
             state:Set(newState)
             if not noFire then
@@ -321,7 +320,7 @@ function CharacterBuilder.CreatePanel()
 
         selectCareer = function(element, careerId, noFire)
             local state = element.data.state
-            local cachedCareerId = state:Get("career.selectedId")
+            local cachedCareerId = state:Get(SEL.CAREER .. ".selectedId")
             local cachedLevelChoices = state:Get("levelChoices")
             local hero = _getHero(state)
             local levelChoices = hero and hero:GetLevelChoices() or {}
@@ -334,14 +333,14 @@ function CharacterBuilder.CreatePanel()
             end
 
             local newState = {
-                { key = "career.selectedId", value = careerId },
+                { key = SEL.CAREER .. ".selectedId", value = careerId },
             }
             local careerItem = dmhub.GetTableVisible(Background.tableName)[careerId]
             if careerItem then
                 local featureDetails = {}
                 careerItem:FillFeatureDetails(levelChoices, featureDetails)
 
-                -- Special case: Make inciting incidents look like features
+                -- Special case: Adapt inciting incidents to behave like features
                 for _,item in ipairs(careerItem:try_get("characteristics", {})) do
                     local feature = CharacterIncidentChoice:new(item)
                     if feature then
@@ -362,8 +361,8 @@ function CharacterBuilder.CreatePanel()
 
                 local featureCache = CBFeatureCache:new(hero, careerId, careerItem.name, featureDetails)
 
-                newState[#newState+1] = { key = "career.selectedItem", value = careerItem }
-                newState[#newState+1] = { key = "career.featureCache", value = featureCache }
+                newState[#newState+1] = { key = SEL.CAREER .. ".selectedItem", value = careerItem }
+                newState[#newState+1] = { key = SEL.CAREER .. ".featureCache", value = featureCache }
             end
             state:Set(newState)
             if not noFire then
@@ -374,9 +373,9 @@ function CharacterBuilder.CreatePanel()
         selectClass = function(element, classId, noFire)
             -- Read our cache
             local state = element.data.state
-            local cachedClassId = state:Get("class.selectedId")
-            local cachedLevel = state:Get("class.level")
-            local cachedSubclasses = state:Get("class.selectedSubclasses")
+            local cachedClassId = state:Get(SEL.CLASS .. ".selectedId")
+            local cachedLevel = state:Get(SEL.CLASS .. ".level")
+            local cachedSubclasses = state:Get(SEL.CLASS .. ".selectedSubclasses")
             local cachedLevelChoices = state:Get("levelChoices")
 
             -- Read current state / selections
@@ -396,8 +395,8 @@ function CharacterBuilder.CreatePanel()
 
             -- Something changed so we need to process it
             local newState = {
-                { key = "class.selectedId", value = classId },
-                { key = "class.level", value = level },
+                { key = SEL.CLASS .. ".selectedId", value = classId },
+                { key = SEL.CLASS .. ".level", value = level },
             }
             local classItem = dmhub.GetTableVisible(Class.tableName)[classId]
             if classItem then
@@ -411,13 +410,13 @@ function CharacterBuilder.CreatePanel()
                 end
                 local featureCache = CBFeatureCache:new(hero, classId, classItem.name, classFill)
 
-                newState[#newState+1] = { key = "class.selectedItem", value = classItem }
-                newState[#newState+1] = { key = "class.selectedSubclasses", value = classAndSubClasses }
-                newState[#newState+1] = { key = "class.featureCache", value = featureCache }
+                newState[#newState+1] = { key = SEL.CLASS .. ".selectedItem", value = classItem }
+                newState[#newState+1] = { key = SEL.CLASS .. ".selectedSubclasses", value = classAndSubClasses }
+                newState[#newState+1] = { key = SEL.CLASS .. ".featureCache", value = featureCache }
             else
-                newState[#newState+1] = { key = "class.selectedItem", value = nil }
-                newState[#newState+1] = { key = "class.selectedSubclasses", value = nil }
-                newState[#newState+1] = { key = "class.featureCache", value = nil }
+                newState[#newState+1] = { key = SEL.CLASS .. ".selectedItem", value = nil }
+                newState[#newState+1] = { key = SEL.CLASS .. ".selectedSubclasses", value = nil }
+                newState[#newState+1] = { key = SEL.CLASS .. ".featureCache", value = nil }
             end
             state:Set(newState)
             if not noFire then
@@ -427,9 +426,9 @@ function CharacterBuilder.CreatePanel()
 
         selectItem = function(element, info)
             local events = {
-                ancestry = "selectAncestry",
-                career   = "selectCareer",
-                class    = "selectClass",
+                [SEL.ANCESTRY] = "selectAncestry",
+                [SEL.CAREER]   = "selectCareer",
+                [SEL.CLASS]    = "selectClass",
             }
             local eventName = events[info.selector]
             if eventName then
