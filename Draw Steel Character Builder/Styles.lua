@@ -360,6 +360,11 @@ local function _labelStyles()
             fontSize = 22,
             bold = true,
         },
+        {
+            selectors = {"feature-target", "ability-card"},
+            bgcolor = "clear",
+            border = 0,
+        },
 
         -- Options for skill selection etc.
         {

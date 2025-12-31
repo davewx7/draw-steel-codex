@@ -209,6 +209,11 @@ function CBFeatureWrapper:GetCategoryOrder()
     return self:try_get("categoryOrder", "99-zzz")
 end
 
+--- @return CBOptionWrapper|nil
+function CBFeatureWrapper:GetChoice(choiceId)
+    return self:GetChoicesKeyed()[choiceId]
+end
+
 --- @return table
 function CBFeatureWrapper:GetChoices()
     return self:try_get("choices", {})

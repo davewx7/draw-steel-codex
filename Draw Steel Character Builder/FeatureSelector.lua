@@ -70,6 +70,12 @@ function CBFeatureSelector.SelectionPanel(selector, feature)
                     selectedId = element.data.option:GetGuid()
                 })
             end,
+            dehover = function(element)
+                element:FireEventTree("onDeHover")
+            end,
+            hover = function(element)
+                element:FireEventTree("onHover")
+            end,
             linger = function(element)
                 if element.data.option then
                     gui.Tooltip("Press to delete")(element)
@@ -97,7 +103,12 @@ function CBFeatureSelector.SelectionPanel(selector, feature)
                 end
                 element:FireEventTree("updateName", name)
                 element:FireEventTree("updateDesc", option and option:GetDescription() or "")
-                element:FireEventTree("customPanel", option and option:Panel())
+
+                -- Workaround: Options never have panels but choices do.
+                if option and feature then
+                    local choice = feature:GetChoice(option:GetGuid())
+                    element:FireEventTree("customPanel", choice and choice:Panel())
+                end
                 element:SetClass("filled", option ~= nil)
             end,
             gui.Label{
@@ -115,7 +126,7 @@ function CBFeatureSelector.SelectionPanel(selector, feature)
                 end,
             },
             gui.Panel{
-                classes = {"builder-base", "panel-base", "feature-target", "collapsed-anim"},
+                classes = {"builder-base", "panel-base", "ability-card", "collapsed-anim"},
                 width = "90%",
                 height = "auto",
                 halign = "center",
@@ -132,7 +143,10 @@ function CBFeatureSelector.SelectionPanel(selector, feature)
                     end
                     if element.data.panelFn then element:AddChild(element.data.panelFn()) end
                 end,
-                refreshBuilderState = function(element, state)
+                onDeHover = function(element)
+                    element:SetClass("collapsed-anim", true)
+                end,
+                onHover = function(element)
                     local visible = element.data.panelFn ~= nil and element.parent:HasClass("filled")
                     element:SetClass("collapsed-anim", not visible)
                 end,
