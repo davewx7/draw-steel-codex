@@ -5,6 +5,7 @@ local _getHero = CharacterBuilder._getHero
 local _getToken = CharacterBuilder._getToken
 
 --- Minimal implementation for the center panel. Non-reactive.
+--- @return Panel
 function CharacterBuilder._detailPanel()
     local detailPanel
 
@@ -110,9 +111,9 @@ function CharacterBuilder.CreatePanel()
             if hero then
                 local levelChoices = hero:GetLevelChoices()
                 if levelChoices then
-                    local choiceId = feature.guid
+                    local choiceId = feature:GetGuid()
                     local selectedId = info.selectedId
-                    local numChoices = feature:NumChoices(hero)
+                    local numChoices = feature:GetNumChoices()
                     if numChoices == nil or numChoices < 1 then numChoices = 1 end
                     if (levelChoices[choiceId] == nil or numChoices == 1) and levelChoices[choiceId] ~= selectedId then
                         levelChoices[choiceId] = { selectedId }
@@ -126,21 +127,11 @@ function CharacterBuilder.CreatePanel()
                             end
                         end
                         if not alreadySelected then
-                            local numSelected = #levelChoices[choiceId]
-                            local selectedCost = 1
-                            if #levelChoices[choiceId] > 0 and feature:try_get("costsPoints") then
-                                for _,option in ipairs(feature.options) do
-                                    local pointsCost = math.max(1, option:try_get("pointsCost", 1))
-                                    if option.guid == info.selectedId then selectedCost = pointsCost end
-                                    for _,guid in ipairs(levelChoices[choiceId]) do
-                                        if info.selectedId == guid then
-                                            numSelected = numSelected + (pointsCost - 1)
-                                            break
-                                        end
-                                    end
-                                end
-                            end
-                            if numChoices >= numSelected + selectedCost then
+                            local option = feature:GetOption(selectedId)
+                            local numChoices = feature:GetNumChoices()
+                            local valueSelected = feature:GetSelectedValue()
+                            local selectedCost = option:GetPointsCost()
+                            if numChoices >= valueSelected + selectedCost then
                                 if numChoices > 1 then
                                     levelChoices[choiceId][#levelChoices[choiceId]+1] = selectedId
                                 else

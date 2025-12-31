@@ -102,7 +102,18 @@ function CBFeatureCache:_processFeatures(hero, features)
     local flattened = {}
     local keyed = {}
 
+    local function passesPrereq(feature)
+        local prereq = feature:try_get("prerequisites")
+        if prereq and #prereq > 0 then
+            for _,pre in ipairs(prereq) do
+                if not pre:Met(hero) then return false end
+            end
+        end
+        return true
+    end
+
     local function addFeature(feature)
+        if not passesPrereq(feature) then return end
         local cacheFeature = CBFeatureWrapper:new(hero, feature)
         if cacheFeature then
             local guid = cacheFeature:GetGuid()
@@ -147,7 +158,9 @@ function CBFeatureWrapper:new(hero, feature)
 
     instance.feature = feature
     instance.category = CBFeatureWrapper._deriveCategory(feature)
-    instance.order = CBFeatureWrapper._deriveOrder(instance, feature)
+    local nameOrder, categoryOrder = CBFeatureWrapper._deriveOrder(instance, feature)
+    instance.order = nameOrder
+    instance.categoryOrder = categoryOrder
     instance.currentOptionId = nil
 
     CBFeatureWrapper.Update(instance, hero)
@@ -190,6 +203,10 @@ end
 --- @return string
 function CBFeatureWrapper:GetCategory()
     return self.category
+end
+
+function CBFeatureWrapper:GetCategoryOrder()
+    return self:try_get("categoryOrder", "99-zzz")
 end
 
 --- @return table
@@ -243,8 +260,14 @@ end
 --- @param option CBOptionWrapper
 --- @return string
 function CBFeatureWrapper:GetOptionDisplayName(option)
-    local pointCost = self:CostsPoints() and string.format(" (%d Points)", option:GetPointsCost()) or ""
-    return string.format("%s%s", option:GetName(), pointCost)
+    local name = option:GetName()
+    if self:CostsPoints() then
+        if not name:lower():find(" points)") then
+            local pointCost = string.format(" (%d Points)", option:GetPointsCost())
+            name = string.format("%s%s", name, pointCost)
+        end
+    end
+    return name
 end
 
 --- Get the options as an array
@@ -260,7 +283,7 @@ end
 
 --- @return string
 function CBFeatureWrapper:GetOrder()
-    return self:try_get("order", "99zzz")
+    return self:try_get("order", "99-zzz")
 end
 
 --- @return RollTableReference
@@ -416,7 +439,8 @@ end
 
 --- Derive sort order from feature type
 --- @param feature CharacterChoice
---- @return string
+--- @return string nameOrder
+--- @return string categoryOrder
 function CBFeatureWrapper:_deriveOrder(feature)
     local typeOrder = {
         CharacterAncestryInheritanceChoice  = 1,
@@ -430,8 +454,11 @@ function CBFeatureWrapper:_deriveOrder(feature)
         CharacterIncidentChoice             = 9,
     }
 
-    local order = typeOrder[feature.typeName] or 99
-    return string.format("%02d-%s", order, self:GetName())
+    local orderNum = typeOrder[feature.typeName] or 99
+    local nameOrder = string.format("%02d-%s", orderNum, self:GetName())
+    local catOrder = string.format("%02d-%s", orderNum, self:GetCategory())
+
+    return nameOrder, catOrder
 end
 
 --[[

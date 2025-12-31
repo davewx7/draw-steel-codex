@@ -198,7 +198,7 @@ function CBCharPanel._statusItem(selector, getSelected)
 
                 for _,item in ipairs(featureCache:GetSortedFeatures()) do
                     local feature = featureCache:GetFeature(item.guid)
-                    local key = feature:GetOrder()
+                    local key = feature:GetCategoryOrder()
                     if statusEntries[key] == nil then
                         statusEntries[key] = {
                             id = feature:GetCategory(),

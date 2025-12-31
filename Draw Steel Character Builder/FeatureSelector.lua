@@ -3,11 +3,9 @@
 ]]
 CBFeatureSelector = RegisterGameType("CBFeatureSelector")
 
-local _characterHasLevelChoice = CharacterBuilder._characterHasLevelChoice
 local _fireControllerEvent = CharacterBuilder._fireControllerEvent
 local _getHero = CharacterBuilder._getHero
 local _getState = CharacterBuilder._getState
-local _safeGet = CharacterBuilder._safeGet
 
 --- Render a feature choice panel
 --- @param selector string The main selector we're operating under
@@ -320,8 +318,7 @@ function CBFeatureSelector.SelectionPanel(selector, feature)
                         end
 
                         _fireControllerEvent(element, "applyLevelChoice", {
-                            -- TODO: Make this use the wrapper.
-                            feature = feature:GetFeature(),
+                            feature = feature,
                             selectedId = selectedOption:GetGuid()
                         })
                     end
