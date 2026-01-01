@@ -3733,6 +3733,7 @@ Commands.light = function(str)
             execute = function()
                 if tok.properties.selectedLoadout == 1 then
                     tok.properties.selectedLoadout = 0
+					audio.DispatchSoundEvent("Ability.Torch_Off")
                 else
                     if not tok.properties:try_get("initLight") then
                         --set to our preferred light if we've never made a different explicit choice.
@@ -3741,6 +3742,7 @@ Commands.light = function(str)
                     end
 
                     tok.properties.selectedLoadout = 1
+					audio.DispatchSoundEvent("Ability.Torch_On")
                 end
             end,
         }
