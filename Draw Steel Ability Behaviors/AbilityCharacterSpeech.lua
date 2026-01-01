@@ -34,9 +34,6 @@ function ActivatedAbilityCharacterSpeechBehavior:Cast(ability, casterToken, targ
             self._tmp_shuffle[#self._tmp_shuffle] = nil
 
             local language = tok.properties:CurrentlySpokenLanguage()
-            if language then
-                language = dmhub.GetTable(Language.tableName)[language]
-            end
 
             if language ~= nil then
                 tok:ModifyProperties{

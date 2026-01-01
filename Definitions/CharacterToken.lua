@@ -54,6 +54,7 @@
 --- @field characterHeight number (read-only) the number of tiles tall the token is.
 --- @field loc Loc (Read-only) The location the token is at.
 --- @field locsOccupying Loc[] (Read-only) An array of locations the token is occupying. The number of items in this array will be based on the token's creature size.
+--- @field hasConcealment boolean Is true if the token is in a location that has concealment.
 --- @field mapid string (Read-only) the id of the map the token is currently on.
 --- @field floorid string (Read-only) the id of the floor the token is currently on.
 --- @field canCurrentlyClimb boolean True if the creature can climb in the current location it is in now.
@@ -217,10 +218,9 @@ function CharacterToken:PosAtLoc(loc)
 	-- dummy implementation for documentation purposes only
 end
 
---- ExecuteWithTheoreticalLoc
---- @param loc any
---- @param fn any
---- @return nil
+--- ExecuteWithTheoreticalLoc: Given a location and a function will execute the function with the token at that location.
+--- @param loc Loc The hypothetical location to execute the function from.
+--- @param fn function The function to execute.
 function CharacterToken:ExecuteWithTheoreticalLoc(loc, fn)
 	-- dummy implementation for documentation purposes only
 end

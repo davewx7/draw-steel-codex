@@ -292,7 +292,7 @@ TokenHud.RegisterPanel{
 
                 styles = {
                     gui.Style{
-                        opacity = 0.3,
+                        opacity = 0.7,
                     },
                 },
 

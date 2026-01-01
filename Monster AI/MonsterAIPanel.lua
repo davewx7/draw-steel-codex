@@ -229,7 +229,13 @@ MonsterAIPanel = function()
                                             lmargin=8,
                                             width = "100%-16",
                                             height = "auto",
+                                            hover = function(element)
+                                                if element.data.tooltip ~= nil then
+                                                    gui.Tooltip(element.data.tooltip)(element)
+                                                end
+                                            end,
                                             setmove = function(element, moveEntry)
+                                                element.data.tooltip = moveEntry.description
                                                 local name = moveEntry.id
                                                 local abilities = moveEntry.abilities
                                                 if #abilities == 1 and abilities[1] == name then
@@ -273,11 +279,16 @@ MonsterAIPanel = function()
 
                         gui.Label{
                             fontSize = 16,
-                            bold = true,
                             width = "100%",
                             height = "auto",
                             setanalysis = function(element, entry)
-                                element.text = entry.monsterType
+                                local text = entry.monsterType
+                                if entry.language ~= nil then
+                                    text = string.format("<b>%s</b>\nCommunicates in %s", text, entry.language.name)
+                                else
+                                    text = string.format("<b>%s</b>\nNo language", text)
+                                end
+                                element.text = text
                             end,
                         },
                     }

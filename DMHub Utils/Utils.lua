@@ -36,6 +36,12 @@ function table.remove_value(t, element)
     return result
 end
 
+function table.resize_array(t, size)
+    for i=#t, size + 1, -1 do
+        t[i] = nil
+    end
+end
+
 function table.empty(t)
     return next(t) == nil
 end

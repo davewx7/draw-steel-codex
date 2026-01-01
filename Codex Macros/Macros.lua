@@ -1280,3 +1280,16 @@ Commands.print = function(str)
 
     print("TIME::", sw.milliseconds, sum)
 end
+
+Commands.languagesknown = function(str)
+    local languagesTable = dmhub.GetTable(Language.tableName)
+    local languagesKnown = creature.g_languagesKnownLocally
+    for langid,_ in pairs(languagesKnown) do
+        local lang = languagesTable[langid]
+        if lang == nil then
+            print("Language: Unknown", langid)
+        else
+            print("Language:", langid, lang.name)
+        end
+    end
+end

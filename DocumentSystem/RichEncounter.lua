@@ -364,6 +364,7 @@ function RichEncounter.CreateDisplay(self)
             self = tag or self
             element.data.encounter = self.encounter
             m_balancedEncounter = self.encounter:CloneForNumberOfHeroes()
+            print("HAVE TAG::", json(tag))
         end,
 
         multimonitor = {"numheroes"},

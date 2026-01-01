@@ -69,6 +69,12 @@ function audio.RegisterAudioMod(codemod)
 	-- dummy implementation for documentation purposes only
 end
 
+--- DevDownloadAudio
+--- @return nil
+function audio.DevDownloadAudio()
+	-- dummy implementation for documentation purposes only
+end
+
 --- UploadAudio
 --- @return nil
 function audio.UploadAudio()

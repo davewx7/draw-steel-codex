@@ -2,7 +2,8 @@ local mod = dmhub.GetModLoading()
 
 ---@class MonsterAI
 MonsterAI = RegisterGameType("MonsterAI")
-MonsterAI.moves = {}
+MonsterAI.moves = {} --a table of registered moves the ai can choose from.
+MonsterAI.prompts = {} --a table of prompted abilities the ai knows how to use.
 MonsterAI.token = false
 MonsterAI.squadMembers = {}
 MonsterAI.squadCaptain = false
@@ -104,75 +105,18 @@ function MonsterAI:PlayTurnCoroutine(initiativeid)
                 end
 
                 local promptCallback = function(invokerToken, casterToken, abilityClone, symbols, options)
-                    if abilityClone.name == "Push!" or abilityClone.name == "Pull!" or abilityClone.name == "Slide!" then
-                        local range = abilityClone:GetRange(casterToken.properties)
-                        local filterTargetPredicate = abilityClone:TargetLocPassesFilterPredicate(casterToken, symbols) or function() return true end
-
-
-                        --TODO: implement custom target shape for ai
-                        --local customLocs = abilityClone:CustomTargetShape(casterToken, range, symbols, {})
-
-
-                        local loc = casterToken.loc
-                        for i=1,range do
-                            loc = loc.north.west
-                        end
-
-                        local possibleLocs = {}
-                        for i=1,range*2 do
-                            if filterTargetPredicate(loc) then
-                                possibleLocs[#possibleLocs+1] = loc
+                    local handler = self.prompts[abilityClone.name] or self.prompts[string.format("%s:%s", invokerToken.properties.monster_type, abilityClone.name)]
+                    if handler ~= nil then
+                        local result = handler.handler(self, invokerToken, casterToken, abilityClone, symbols, options)
+                        if result ~= nil then
+                            for k,v in pairs(result) do
+                                options[k] = v
                             end
-                            loc = loc.east
-                        end
-
-                        for i=1,range*2 do
-                            if filterTargetPredicate(loc) then
-                                possibleLocs[#possibleLocs+1] = loc
-                            end
-                            loc = loc.south
-                        end
-
-                        for i=1,range*2 do
-                            if filterTargetPredicate(loc) then
-                                possibleLocs[#possibleLocs+1] = loc
-                            end
-                            loc = loc.west
-                        end
-
-                        for i=1,range*2 do
-                            if filterTargetPredicate(loc) then
-                                possibleLocs[#possibleLocs+1] = loc
-                            end
-                            loc = loc.north
-                        end
-
-                        local bestLoc = nil
-                        local bestScore = nil
-                        for _,testLoc in ipairs(possibleLocs) do
-                            local movementInfo = casterToken:MarkMovementArrow(testLoc, {straightline = true, ignorecreatures = false, })
-                            if movementInfo ~= nil then
-                                local path = movementInfo.path
-                                local dist = path.destination:DistanceInTiles(path.origin)
-                                if bestScore == nil or dist < bestScore then
-                                    bestScore = dist
-                                    bestLoc = testLoc
-                                end
-                            end
-                        end
-
-                        if bestLoc ~= nil then
-                            casterToken:MarkMovementArrow(bestLoc, {straightline = true, ignorecreatures = false})
-                            MonsterAI.Sleep(1)
-                            casterToken:ClearMovementArrow()
-
-                            options.targets = {
-                                { loc = bestLoc }
-                            }
 
                             return "inherit"
                         end
-
+                    else
+                        print("AI:: No handler for prompt ability:", string.format("%s:%s", invokerToken.properties.monster_type, abilityClone.name))
                     end
 
                     return "prompt"
@@ -252,21 +196,21 @@ function MonsterAI:FindClosestEnemy()
     return closestEnemy
 end
 
-function MonsterAI:FindValidTargetsOfStrike(ability, loc, range)
+function MonsterAI:FindValidTargetsOfStrike(token, ability, loc, range)
     local hasCharge = ability:HasKeyword("Charge") or ability.name == "Melee Free Strike"
-    range = range or ability:GetRange(self.token.properties)
+    range = range or ability:GetRange(token.properties)
     local result = {}
-    self.token:ExecuteWithTheoreticalLoc(loc, function()
+    token:ExecuteWithTheoreticalLoc(loc, function()
         for i=1,#self.enemyTokens do
             local enemy = self.enemyTokens[i]
-            local dist = self.token:Distance(enemy)
+            local dist = token:Distance(enemy)
 
             local chargeLoc = nil
             if hasCharge then
-                local movementInfo = self.token:MarkMovementArrow(enemy.loc, {straightline = true, ignorecreatures = false})
+                local movementInfo = token:MarkMovementArrow(enemy.loc, {straightline = true, ignorecreatures = false, moveThroughFriends = true})
                 if movementInfo ~= nil then
                     local chargeDist = movementInfo.path.destination:DistanceInTiles(movementInfo.path.origin)
-                    if chargeDist <= self.token.properties:CurrentMovementSpeed() then
+                    if chargeDist <= token.properties:CurrentMovementSpeed() then
                         local dest = movementInfo.path.destination
                         dist = enemy:Distance(dest)
                         chargeLoc = dest
@@ -275,7 +219,7 @@ function MonsterAI:FindValidTargetsOfStrike(ability, loc, range)
             end
 
             if dist <= range then
-                local los = self.token:GetLineOfSight(enemy)
+                local los = token:GetLineOfSight(enemy)
                 if los > 0 then
                     result[#result+1] = { token = enemy, charge = chargeLoc }
                 end
@@ -285,7 +229,7 @@ function MonsterAI:FindValidTargetsOfStrike(ability, loc, range)
     end)
 
     if hasCharge then
-        self.token:ClearMovementArrow()
+        token:ClearMovementArrow()
     end
 
     return result
@@ -298,7 +242,7 @@ function MonsterAI:FindSquadMemberStrikeOptions(squadMember, ability)
     for _,info in pairs(squadMember.paths) do
         local destLoc = info.loc
 
-        local targets = self:FindValidTargetsOfStrike(ability, destLoc, range)
+        local targets = self:FindValidTargetsOfStrike(squadMember.token, ability, destLoc, range)
         for _,target in ipairs(targets) do
             local cost = info.cost
             if target.charge ~= nil then
@@ -361,11 +305,11 @@ function MonsterAI:ExecuteSquadStrike(ability)
 
 
             if bestOption.charge ~= nil then
-                self.Sleep(0.2)
                 self:Speech(squadMember.token, "Charge!")
                 self.Sleep(0.3)
+                print("AI:: CHARGE TO", bestOption.charge.x, bestOption.charge.y)
                 path = squadMember.token:Move(bestOption.charge, {maxCost = 10000})
-                self.Sleep(0.8)
+                self.Sleep(1)
                 
             end
 
@@ -421,24 +365,72 @@ function MonsterAI:ExecuteSquadStrike(ability)
     return #targetPairs > 0
 end
 
-function MonsterAI:FindBestMoveToUseStrike(ability)
-    local range = ability:GetRange(self.token.properties)
-    local numTargets = ability:GetNumTargets(self.token)
+function MonsterAI:FindBestMoveToUseStrike(token, ability, scorefn)
+    if scorefn ~= nil then
+        local scoreCache = {}
+        local scoreInternal = scorefn
+        scorefn = function(tok)
+            local score = scoreCache[tok.charid]
+            if score == nil then
+                score = scoreInternal(tok)
+                scoreCache[tok.charid] = score
+            end
+            return score
+        end
+    end
+    local range = ability:GetRange(token.properties)
+    local numTargets = ability:GetNumTargets(token)
     local bestScore = 0
     local bestMove = nil
     for _,info in pairs(self.paths) do
         local destLoc = info.loc
 
-        local targets = self:FindValidTargetsOfStrike(ability, destLoc, range)
+        local targets = self:FindValidTargetsOfStrike(token, ability, destLoc, range)
 
-        local score = math.min(numTargets, #targets) - info.cost*0.001
+        local score = math.min(numTargets, #targets)
+        if scorefn ~= nil then
+            score = 0
+            table.sort(targets, function(a,b)
+                return scorefn(a.token) > scorefn(b.token)
+            end)
+            for i=1,math.min(numTargets, #targets) do
+                score = score + scorefn(targets[i].token)
+            end
+        end
+
+        score = score - info.cost*0.001
+
         if score > bestScore then
             bestScore = score
             bestMove = destLoc
         end
     end
 
-    return bestMove
+    return bestMove, bestScore
+end
+
+function MonsterAI:FindBestMoveToUseBurst(token, ability, scorefn)
+    scorefn = scorefn or function() return 1 end
+    local range = ability:GetRange(token.properties)
+    local bestScore = nil
+    local bestMove = nil
+    local allTokens = dmhub.allTokens
+    for _,info in pairs(self.paths) do
+        local score = 0
+        local destLoc = info.loc
+        for _,targetToken in ipairs(allTokens) do
+            if targetToken ~= token and targetToken:Distance(destLoc) <= range then
+                score = score + scorefn(targetToken)
+            end
+        end
+
+        if bestScore == nil or score > bestScore then
+            bestScore = score
+            bestMove = destLoc
+        end
+    end
+
+    return bestMove, bestScore
 end
 
 function MonsterAI.MoveMatchesMonster(token, move)
@@ -528,6 +520,23 @@ end
 function MonsterAI:ExecuteAbility(casterToken, ability, targets, options)
     options = options or {}
     local symbols = options.symbols or {}
+    symbols.mode = symbols.mode or 1
+
+    if targets == nil then
+        targets = {}
+
+        if ability.targetType == "all" then
+            --a burst ability.
+            for _,token in ipairs(dmhub.allTokens) do
+                if ability:TargetPassesFilter(casterToken, token, symbols) then
+                    targets[#targets+1] = { token = token }
+                end
+            end
+        end
+    else
+        local numTargets = ability:GetNumTargets(casterToken)
+        table.resize_array(targets, numTargets)
+    end
 
     for _,target in ipairs(targets) do
         if target.charge ~= nil then
@@ -658,8 +667,14 @@ function MonsterAI:Analysis()
             if initiativeid ~= nil and queue.entries[initiativeid] ~= nil and (not queue:IsEntryPlayer(initiativeid)) and (not monstersSeen[monsterType]) then
                 monstersSeen[monsterType] = true
 
+                local languageid = tok.properties:CurrentlySpokenLanguage()
+                if languageid then
+                    languageid = dmhub.GetTable(Language.tableName)[languageid]
+                end
+
                 local resultEntry = {
                     monsterType = monsterType,
+                    language = languageid,
                     moves = {},
                 }
                 result[#result+1] = resultEntry
@@ -668,6 +683,7 @@ function MonsterAI:Analysis()
                     if self.MoveMatchesMonster(tok, move) then
                         resultEntry.moves[#resultEntry.moves+1] = {
                             id = moveid,
+                            description = move.description,
                             abilities = move.abilities,
                         }
                     end
@@ -679,6 +695,7 @@ function MonsterAI:Analysis()
                         if ability.categorization == "Signature Ability" then
                             resultEntry.moves[#resultEntry.moves+1] = {
                                 id = "Minion Signature Ability",
+                                description = "The Squad will move into a position that can maximize their number of targets and then use this ability.",
                                 abilities = {ability.name},
                             }
                         end
@@ -693,4 +710,11 @@ end
 
 function MonsterAI:RegisterMove(args)
     self.moves[args.id] = args
+end
+
+function MonsterAI:RegisterPrompt(args)
+    for _,prompt in ipairs(args.prompts) do
+        self.prompts[prompt] = args
+    end
+
 end

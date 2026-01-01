@@ -1771,6 +1771,7 @@ function CreateTokenHud(token)
                 element.data.lastSpeechTime = dmhub.Time()
 
                 local fontFace = nil
+                print("Language: Speaking in", entry.langid, "known locally =", creature.g_languagesKnownLocally)
                 if (not dmhub.isDM) and (not token.canControl) and (not creature.g_languagesKnownLocally[entry.langid]) then
                     fontFace = "Tengwar"
                 end
