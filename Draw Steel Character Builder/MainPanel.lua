@@ -358,12 +358,13 @@ function CharacterBuilder.CreatePanel()
                     }
                 end
 
+                local extraLevelInfo = hero:ExtraLevelInfo()
                 if #classAndSubClasses > 0 then
-                    for _,entry in ipairs(classAndSubClasses) do
-                        entry.class:FillFeatureDetailsForLevel(levelChoices, entry.level, false, "nonprimary", classFill)
+                    for i,entry in ipairs(classAndSubClasses) do
+                        entry.class:FillFeatureDetailsForLevel(levelChoices, entry.level, extraLevelInfo, i ~= 1, classFill)
                     end
                 else
-                    classItem:FillFeatureDetailsForLevel(levelChoices, 1, false, "nonprimary", classFill)
+                    classItem:FillFeatureDetailsForLevel(levelChoices, 1, extraLevelInfo, "nonprimary", classFill)
                 end
 
                 local featureCache = CBFeatureCache:new(hero, classId, classItem.name, classFill)

@@ -8,7 +8,6 @@ local mod = dmhub.GetModLoading()
 local SELECTOR = CharacterBuilder.SELECTOR.CLASS
 local INITIAL_CATEGORY = "overview"
 local AVAILABLE_WITHOUT_CLASS = {overview = true}
-local CHARACTERISTIC_GUID = "7f3c8a2e-5b14-4d9a-9e61-3c7f2a8b5d4e"
 
 local _fireControllerEvent = CharacterBuilder._fireControllerEvent
 local _formatOrder = CharacterBuilder._formatOrder

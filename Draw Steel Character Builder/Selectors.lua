@@ -406,15 +406,14 @@ local TEST_DETAIL = [[
 # Known Issues
 
 - Second tier selection buttons, like after you've selected a class, are displayed in a long (albeit sorted) list instead of categorized.
-- Extra info display is sometimes redundant or an empty panel.
-- Slow start rules aren't honored in class building. Currently gives all 1st level features.
-- Starting characteristics are a WIP.
+- In the selection lists, we sometimes display redundant, empty, or meaningless extra info / description info.
+- Right side character panel, build tab doesn't scroll.
 
 # Reporing Issues
 
-- Please use the bug forum on the Codex Discord.
+- Please use the bug forum on the Codex / DMHub Discord.
 - Where applicable, please verify the old builder tab works as expected while new builder fails. If both tabs behave the same, please log as a configuration issue.
-- Detailed reproduction steps, especially each thing you chose along your path, is super helpful.
+- Detailed reproduction steps, especially each thing you chose along your path, help immensely.
 ]]
 local function _testDetail()
     return gui.Panel{
