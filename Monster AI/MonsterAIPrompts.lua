@@ -53,8 +53,36 @@ MonsterAI:RegisterPrompt{
             if movementInfo ~= nil then
                 local path = movementInfo.path
                 local dist = path.destination:DistanceInTiles(path.origin)
-                if bestScore == nil or dist < bestScore then
-                    bestScore = dist
+
+                local collideWith = movementInfo.collideWith
+
+                local fallDistance = path.destination.altitude - game.currentFloor:GetAltitudeAtLoc(path.destination)
+                if fallDistance <= 1 then
+                    --only consider a decent size fall.
+                    fallDistance = 0
+                end
+
+                local collideWithAllies = 0
+                local collideWithEnemies = 0
+                local collideWithObjects = collideWith ~= nil and #collideWith == 0
+                for _,collideToken in ipairs(collideWith or {}) do
+                    if collideToken.isObject then
+                        collideWithObjects = true
+                    elseif collideToken:IsFriend(invokerToken) then
+                        collideWithAllies = collideWithAllies + 1
+                    else
+                        collideWithEnemies = collideWithEnemies + 1
+                    end
+                end
+
+                --lower score is better.
+                local score = dist + 2*collideWithAllies - 2*collideWithEnemies - 2*fallDistance
+                if collideWithObjects then
+                    score = score - 4
+                end
+
+                if bestScore == nil or score < bestScore then
+                    bestScore = score
                     bestLoc = testLoc
                 end
             end

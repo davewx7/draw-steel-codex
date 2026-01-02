@@ -105,6 +105,16 @@ function MonsterAI:PlayTurnCoroutine(initiativeid)
                 end
 
                 local promptCallback = function(invokerToken, casterToken, abilityClone, symbols, options)
+                    --the ability directly inserted the expected targets.
+                    local expectedEntry = self:try_get("_tmp_expectedPromptTarget")
+                    if expectedEntry ~= nil and expectedEntry.casterid == invokerToken.charid then
+                        if expectedEntry.sleep then
+                            self.Sleep(expectedEntry.sleep)
+                        end
+                        options.targets = expectedEntry.targets
+                        return "inherit"
+                    end
+
                     local handler = self.prompts[abilityClone.name] or self.prompts[string.format("%s:%s", invokerToken.properties.monster_type, abilityClone.name)]
                     if handler ~= nil then
                         local result = handler.handler(self, invokerToken, casterToken, abilityClone, symbols, options)
@@ -197,20 +207,46 @@ function MonsterAI:FindClosestEnemy()
 end
 
 function MonsterAI:FindValidTargetsOfStrike(token, ability, loc, range)
+
+    local filteredTokens = {}
+    for i=1,#self.enemyTokens do
+        local enemy = self.enemyTokens[i]
+        local canTarget = ability:TargetPassesFilter(token, enemy, {})
+        if canTarget and enemy.properties:HasNamedCondition("Hidden") and ability:HasKeyword("Strike") then
+            canTarget = false
+        end
+        if canTarget then
+            filteredTokens[#filteredTokens+1] = enemy
+        end
+    end
+
     local hasCharge = ability:HasKeyword("Charge") or ability.name == "Melee Free Strike"
     range = range or ability:GetRange(token.properties)
     local result = {}
     token:ExecuteWithTheoreticalLoc(loc, function()
-        for i=1,#self.enemyTokens do
-            local enemy = self.enemyTokens[i]
+        for i=1,#filteredTokens do
+            local enemy = filteredTokens[i]
             local dist = token:Distance(enemy)
 
             local chargeLoc = nil
             if hasCharge then
                 local movementInfo = token:MarkMovementArrow(enemy.loc, {straightline = true, ignorecreatures = false, moveThroughFriends = true})
+                --check that the move doesn't make us fall down.
+                if movementInfo ~= nil then
+                    local path = movementInfo.path
+                    local altitude = game.currentFloor:GetAltitudeAtLoc(path.origin)
+                    for _,step in ipairs(path.steps) do
+                        local fallDistance = altitude - game.currentFloor:GetAltitudeAtLoc(step)
+                        if fallDistance > 1 then
+                            movementInfo = nil
+                            break
+                        end
+                    end
+                end
+
                 if movementInfo ~= nil then
                     local chargeDist = movementInfo.path.destination:DistanceInTiles(movementInfo.path.origin)
-                    if chargeDist <= token.properties:CurrentMovementSpeed() then
+                    if chargeDist <= ability:try_get("chargeDistanceOverride", token.properties:CurrentMovementSpeed()) then
                         local dest = movementInfo.path.destination
                         dist = enemy:Distance(dest)
                         chargeLoc = dest
@@ -221,7 +257,7 @@ function MonsterAI:FindValidTargetsOfStrike(token, ability, loc, range)
             if dist <= range then
                 local los = token:GetLineOfSight(enemy)
                 if los > 0 then
-                    result[#result+1] = { token = enemy, charge = chargeLoc }
+                    result[#result+1] = { token = enemy, loc = enemy.loc, charge = chargeLoc }
                 end
             end
         end
@@ -300,7 +336,7 @@ function MonsterAI:ExecuteSquadStrike(ability)
 
         if bestOption ~= nil then
             assignedTargets[bestOption.token.charid] = (assignedTargets[bestOption.token.charid] or 0) + 1
-            local path = squadMember.token:Move(bestOption.loc, {maxCost = 10000})
+            local path = squadMember.token:Move(bestOption.loc, {maxCost = 10000, ignoreFalling = false})
             self.Sleep(0.6)
 
 
@@ -308,7 +344,7 @@ function MonsterAI:ExecuteSquadStrike(ability)
                 self:Speech(squadMember.token, "Charge!")
                 self.Sleep(0.3)
                 print("AI:: CHARGE TO", bestOption.charge.x, bestOption.charge.y)
-                path = squadMember.token:Move(bestOption.charge, {maxCost = 10000})
+             local path = squadMember.token:Move(bestOption.loc, {maxCost = 10000, ignoreFalling = false})
                 self.Sleep(1)
                 
             end
@@ -323,7 +359,7 @@ function MonsterAI:ExecuteSquadStrike(ability)
     end
 
     if #targetPairs > 0 then
-        if self.squadCaptain then
+        if self.squadCaptain and self.squadCaptain.valid then
             if ability:HasKeyword("Melee") then
                 self:Speech(self.squadCaptain, {"Attack together!", "Strike as one!", "Get 'em, boys!"})
             else
@@ -450,6 +486,12 @@ end
 
 function MonsterAI:FindAndExecuteMove()
     local token = self.token
+
+    if not token.valid then
+        print("AI:: Token no longer valid.")
+        return false
+    end
+
     local abilities = self.abilities
     local bestScore = {score = 0}
     local bestMove = nil
@@ -517,6 +559,15 @@ function MonsterAI:FindAndExecuteMove()
     return false
 end
 
+function MonsterAI:DistanceFromNearestEnemy(token)
+    local result = 999
+    for _,enemy in ipairs(self.enemyTokens) do
+        local dist = token:Distance(enemy)
+        result = math.min(result, dist)
+    end
+    return result
+end
+
 function MonsterAI:ExecuteAbility(casterToken, ability, targets, options)
     options = options or {}
     local symbols = options.symbols or {}
@@ -526,9 +577,10 @@ function MonsterAI:ExecuteAbility(casterToken, ability, targets, options)
         targets = {}
 
         if ability.targetType == "all" then
+            local range = ability:GetRange(casterToken.properties)
             --a burst ability.
             for _,token in ipairs(dmhub.allTokens) do
-                if ability:TargetPassesFilter(casterToken, token, symbols) then
+                if ability:TargetPassesFilter(casterToken, token, symbols) and token:Distance(casterToken) <= range then
                     targets[#targets+1] = { token = token }
                 end
             end
@@ -536,6 +588,24 @@ function MonsterAI:ExecuteAbility(casterToken, ability, targets, options)
     else
         local numTargets = ability:GetNumTargets(casterToken)
         table.resize_array(targets, numTargets)
+    end
+
+    --if this is a melee and ranged ability, choose the appropriate variation.
+    if ability.meleeAndRanged then
+        local meleeRange = ability.meleeVariation:GetRange(casterToken.properties)
+        local inMeleeRange = true
+        for _,target in ipairs(targets) do
+            if target.token ~= nil and casterToken:Distance(target.token) > meleeRange then
+                inMeleeRange = false
+                break
+            end
+        end
+
+        if inMeleeRange then
+            ability = ability.meleeVariation
+        else
+            ability = ability.rangedVariation
+        end
     end
 
     for _,target in ipairs(targets) do
@@ -551,7 +621,7 @@ function MonsterAI:ExecuteAbility(casterToken, ability, targets, options)
             self:Speech(token, "Charge!")
             self.Sleep(0.5)
 
-            local path = token:Move(target.charge, {maxCost = 10000})
+            local path = token:Move(target.charge, {maxCost = 10000, ignoreFalling = false})
             self.Sleep(1)
             target.charge = nil
         end
@@ -621,6 +691,9 @@ function MonsterAI:FindReachableConcealment()
 end
 
 function MonsterAI:Speech(token, text, options)
+    if not token.valid then
+        return
+    end
     if type(text) == "table" then
         text = text[math.random(1, #text)]
     end
@@ -706,6 +779,12 @@ function MonsterAI:Analysis()
     end
 
     return result
+end
+
+
+--- @param {casterid: string, targets: {casterid: nil|Token, loc: nil|Loc}[], sleep: nil|number} options
+function MonsterAI:SetTargetsForExpectedPrompt(options)
+   self._tmp_expectedPromptTarget = options
 end
 
 function MonsterAI:RegisterMove(args)
