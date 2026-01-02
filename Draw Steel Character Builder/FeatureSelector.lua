@@ -16,6 +16,9 @@
         FeatureCache.lua.
       - If selections aren't stored in levelChoices, implement
         SaveSelection and RemoveSelection on the feature class.
+      - Your feature class can also inject custom UI at certain
+        points in the UI. See injections in BuildSelectorPanel
+        for details.
 ]]
 CBFeatureSelector = RegisterGameType("CBFeatureSelector")
 

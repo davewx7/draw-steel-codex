@@ -379,6 +379,9 @@ function CBClassDetail._characteristicPanel()
                     local attrId2 = target.parent.data.attr.id
                     local attrVal1 = attributes[attrId1].baseValue or 0
                     local attrVal2 = attributes[attrId2].baseValue or 0
+
+                    if attrVal1 == attrVal2 then return end
+
                     attributes[attrId1].baseValue = attrVal2
                     attributes[attrId2].baseValue = attrVal1
 

@@ -55,7 +55,7 @@ function CBSelectors._makeItemsPanel(config)
     end
 
     selectorPanel = gui.Panel {
-        classes = {"collapsed"},
+        classes = {"collapsed-anim"},
         width = "90%",
         height = "auto",
         valign = "top",
@@ -63,7 +63,11 @@ function CBSelectors._makeItemsPanel(config)
         flow = "vertical",
         data = { selector = config.selectorName },
         refreshBuilderState = function(element, state)
-            element:SetClass("collapsed", state:Get("activeSelector") ~= element.data.selector)
+            local visible = state:Get("activeSelector") == element.data.selector
+            element:SetClass("collapsed-anim", not visible)
+            if not visible then
+                element:HaltEventPropagation()
+            end
         end,
         children = buttons,
     }
