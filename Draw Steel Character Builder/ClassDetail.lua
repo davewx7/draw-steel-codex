@@ -10,9 +10,7 @@ local INITIAL_CATEGORY = "overview"
 local AVAILABLE_WITHOUT_CLASS = {overview = true}
 
 local _fireControllerEvent = CharacterBuilder._fireControllerEvent
-local _formatOrder = CharacterBuilder._formatOrder
 local _getHero = CharacterBuilder._getHero
-local _getState = CharacterBuilder._getState
 local _makeDetailNavButton = CharacterBuilder._makeDetailNavButton
 
 --- Return the hero's currently selected class
@@ -115,6 +113,7 @@ function CBClassDetail._overviewPanel()
         hpad = 12,
         bmargin = 12,
         textAlignment = "left",
+        markdown = true,
         text = CharacterBuilder.STRINGS.CLASS.INTRO,
 
         refreshBuilderState = function(element, state)
@@ -140,6 +139,7 @@ function CBClassDetail._overviewPanel()
         tmargin = 12,
         textAlignment = "left",
         bold = false,
+        markdown = true,
         text = CharacterBuilder.STRINGS.CLASS.OVERVIEW,
 
         refreshBuilderState = function(element, state)
