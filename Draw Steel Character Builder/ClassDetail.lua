@@ -157,7 +157,7 @@ function CBClassDetail._overviewPanel()
                     end
                 end
 
-                text = CharacterBuilder._trimToLength(table.concat(textItems, "\n\n"), 1800, false)
+                text = CharacterBuilder._trimToLength(table.concat(textItems, "\n\n"), CharacterBuilder.OVERVIEW_MAX_LENGTH, false)
             end
             element.text = text
         end
@@ -192,13 +192,7 @@ function CBClassDetail._overviewPanel()
         end,
 
         gui.Panel{
-            width = "100%-2",
-            height = "auto",
-            valign = "bottom",
-            vmargin = 32,
-            flow = "vertical",
-            bgimage = true,
-            vpad = 8,
+            classes = {"builder-base", "panel-base", "detail-overview-labels"},
             nameLabel,
             introLabel,
             detailLabel,

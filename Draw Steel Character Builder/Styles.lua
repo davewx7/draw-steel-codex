@@ -149,8 +149,9 @@ local function _panelStyles()
         },
         {
             selectors = {"detail-nav-panel"},
-            height = "100%",
+            height = "100%-12",
             width = CBStyles.SIZES.BUTTON_PANEL_WIDTH + 20,
+            tmargin = 12,
             flow = "vertical",
             borderColor = "teal",
         },
@@ -173,6 +174,17 @@ local function _panelStyles()
             valign = "center",
             halign = "center",
             bgcolor = "white",
+        },
+        {
+            selectors = {"detail-overview-labels"},
+            width = "100%-4",
+            height = "auto",
+            halign = "center",
+            valign = "bottom",
+            vmargin = 32,
+            vpad = 8,
+            flow = "vertical",
+            bgimage = true,
         },
 
         -- Feature selectors

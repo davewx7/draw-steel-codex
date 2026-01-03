@@ -56,7 +56,8 @@ function CharacterBuilder.CreatePanel()
                     element.data.cachedCharSheetInstance = true
                 end
                 if element.data.charSheetInstance and element.data.charSheetInstance.data and element.data.charSheetInstance.data.info then
-                    element.data.state:Set{ key = "token", value = element.data.charSheetInstance.data.info.token }
+                    local newToken = element.data.charSheetInstance.data.info.token
+                    element.data.state:Set{ key = "token", value = newToken }
                 else
                     -- TODO: Can we create a token without attaching it to the game immediately?
                 end
@@ -162,6 +163,10 @@ function CharacterBuilder.CreatePanel()
             if element.data._cacheToken(element) ~= nil then
                 element:FireEvent("refreshToken")
             end
+            element:FireEvent("ensureActiveState")
+        end,
+
+        ensureActiveSelector = function(element)
             if element.data.state:Get("activeSelector") == nil then
                 element:FireEvent("selectorChange", CharacterBuilder.INITIAL_SELECTOR)
             end
@@ -174,6 +179,7 @@ function CharacterBuilder.CreatePanel()
 
         refreshToken = function(element, info)
             -- print("THC:: MAIN:: REFRESHTOKEN::")
+            local cachedToken = _getToken(element.data.state)
             local token
             if info then
                 token = info.token
@@ -183,6 +189,12 @@ function CharacterBuilder.CreatePanel()
             end
 
             if token then
+                if cachedToken and cachedToken.id ~= token.id then
+                    element.data.state = CharacterBuilderState:new()
+                    element.data.state:Set({key = "token", value = token})
+                    element:FireEvent("ensureActiveSelector")
+                end
+
                 local creature = token.properties
                 if creature:IsHero() then
                     local ancestryId = creature:try_get("raceid")

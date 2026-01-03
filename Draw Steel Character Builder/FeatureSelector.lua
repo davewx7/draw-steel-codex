@@ -414,7 +414,7 @@ function CBFeatureSelector.SelectionPanel(selector, feature)
             local cachedFeature = getCachedFeature(state, element.data.featureId)
             if cachedFeature then
                 visible = true
-                enabled = SELECT_MODES[mode] ~= nil and cachedFeature:AllowCurrentSelection()
+                enabled = SELECT_MODES[mode] ~= nil and (SELECT_MODES[mode] == SELECT_MODES.REMOVE or cachedFeature:AllowCurrentSelection())
             end
             element.text = string.upper(SELECT_MODES[mode] or "unknown mode")
             element:SetClass("collapsed", not visible)
@@ -510,7 +510,7 @@ function CBFeatureSelector.SelectionPanel(selector, feature)
 
                         local row = rollTable.rows[rowIndex]
                         element.parent:FireEvent("selectChoice", row.id)
-                        element.parent:FireEvent("applyCurrentItem")
+                        element.parent:FireEvent("applyCurrentItem", SELECT_MODES.SELECT)
 
                         element:SetClass("collapsed-anim", false)
                     end,
