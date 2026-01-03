@@ -10,25 +10,17 @@ local mod = dmhub.GetModLoading()
 --- @field pronouns string
 --- @field physicalFeatures string
 CharacterDescription = RegisterGameType("CharacterDescription")
-CharacterDescription.__index = CharacterDescription
 
 CharacterDescription.CHARACTER_KEY = "characterDescription"
-
-function CharacterDescription:new()
-    local instance = setmetatable({}, self)
-
-    instance.weight = ""
-    instance.height = ""
-    instance.hair = ""
-    instance.eyes = ""
-    instance.skinTone = ""
-    instance.build = ""
-    instance.genderPresentation = ""
-    instance.pronouns = ""
-    instance.physicalFeatures = ""
-
-    return instance
-end
+CharacterDescription.weight = ""
+CharacterDescription.height = ""
+CharacterDescription.hair = ""
+CharacterDescription.eyes = ""
+CharacterDescription.skinTone = ""
+CharacterDescription.build = ""
+CharacterDescription.genderPresentation = ""
+CharacterDescription.pronouns = ""
+CharacterDescription.physicalFeatures = ""
 
 function CharacterDescription:SetWeight(weight)
     self.weight = weight
@@ -112,6 +104,5 @@ function CharacterDescription:GetPhysicalFeatures()
 end
 
 character.Description = function(self)
-    local desc = self:get_or_add(CharacterDescription.CHARACTER_KEY, CharacterDescription:new())
-    return desc
+    return self.characterDescription
 end

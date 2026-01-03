@@ -46,6 +46,8 @@ function character.CreateNew(chartypeid)
 
 		attributes = creature.CreateAttributes(),
 
+        characterDescription = CharacterDescription:new(),
+
 		--map of skill id -> string if we have proficiency.
 		skillProficiencies = {
 		},
