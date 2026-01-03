@@ -1,5 +1,7 @@
 --[[
     Kit detail / selectors
+
+    -- Tac can't choose second kit
 ]]
 CBKitDetail = RegisterGameType("CBKitDetail")
 
@@ -11,6 +13,7 @@ local _fireControllerEvent = CharacterBuilder._fireControllerEvent
 local _getHero = CharacterBuilder._getHero
 
 function CBKitDetail._navPanel()
+    -- TODO: Maybe put inside another panel to shrink vertically.
     return gui.Panel{
         classes = {"categoryNavPanel", "builder-base", "panel-base", "detail-nav-panel"},
         vscroll = true,

@@ -157,7 +157,7 @@ function CBClassDetail._overviewPanel()
                     end
                 end
 
-                text = CharacterBuilder._trimToLength(table.concat(textItems, "\n\n"), 1800, false)
+                text = CharacterBuilder._trimToLength(table.concat(textItems, "\n\n"), CharacterBuilder.OVERVIEW_MAX_LENGTH, false)
             end
             element.text = text
         end

@@ -89,6 +89,9 @@ CharacterBuilder.ROOT_CHAR_SHEET_CLASS = "characterSheetHarness"
 -- of available options is >= this number
 CharacterBuilder.FILTER_VISIBLE_COUNT = 20
 
+--- Trim long text on overview pages to this length
+CharacterBuilder.OVERVIEW_MAX_LENGTH = 1200
+
 CharacterBuilder.SELECTOR = {
     BACK        = "back",
     CHARACTER   = "character",

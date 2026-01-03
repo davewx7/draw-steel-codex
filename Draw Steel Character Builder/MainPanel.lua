@@ -56,7 +56,12 @@ function CharacterBuilder.CreatePanel()
                     element.data.cachedCharSheetInstance = true
                 end
                 if element.data.charSheetInstance and element.data.charSheetInstance.data and element.data.charSheetInstance.data.info then
-                    element.data.state:Set{ key = "token", value = element.data.charSheetInstance.data.info.token }
+                    local newToken = element.data.charSheetInstance.data.info.token
+                    local cachedToken = _getToken(element.data.state)
+                    if cachedToken and cachedToken.id ~= newToken.id then
+                        element.data.state = CharacterBuilderState:new()
+                    end
+                    element.data.state:Set{ key = "token", value = newToken }
                 else
                     -- TODO: Can we create a token without attaching it to the game immediately?
                 end
@@ -177,6 +182,10 @@ function CharacterBuilder.CreatePanel()
             local token
             if info then
                 token = info.token
+                local cachedToken = _getToken(element.data.state)
+                if cachedToken and token.id ~= cachedToken.id then
+                    element.data.state = CharacterBuilderState:new()
+                end
                 element.data.state:Set{key = "token", value = token}
             else
                 token = element.data._cacheToken(element)

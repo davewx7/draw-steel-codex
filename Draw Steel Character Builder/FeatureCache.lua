@@ -532,9 +532,11 @@ function CBFeatureWrapper:_update(hero)
     local choicesKeyed = {}
     local featureChoices = self.feature:Choices(1, self.selected, hero) or {}
     for _,choice in ipairs(featureChoices) do
-        local wrappedChoice = CBOptionWrapper:new(choice)
-        choices[#choices+1] = wrappedChoice
-        choicesKeyed[wrappedChoice:GetGuid()] = wrappedChoice
+        if _safeGet(choice, "hidden", false) == false then
+            local wrappedChoice = CBOptionWrapper:new(choice)
+            choices[#choices+1] = wrappedChoice
+            choicesKeyed[wrappedChoice:GetGuid()] = wrappedChoice
+        end
     end
     table.sort(choices, function(a,b) return a:GetOrder() < b:GetOrder() end)
     self.choices = choices

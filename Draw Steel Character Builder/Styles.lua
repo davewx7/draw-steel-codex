@@ -149,8 +149,9 @@ local function _panelStyles()
         },
         {
             selectors = {"detail-nav-panel"},
-            height = "100%",
+            height = "100%-12",
             width = CBStyles.SIZES.BUTTON_PANEL_WIDTH + 20,
+            tmargin = 12,
             flow = "vertical",
             borderColor = "teal",
         },
